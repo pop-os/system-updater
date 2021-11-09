@@ -1,0 +1,13 @@
+debian/*
+!debian/*install
+!debian/*postinst
+!debian/changelog
+!debian/control
+!debian/links
+!debian/rules
+!debian/source
+.cargo
+target
+vendor
+vendor.tar
+.cargo

@@ -1,0 +1,11 @@
+[Unit]
+Description=Local session service for the Pop System Updater
+Wants=network.target
+
+[Service]
+Type=dbus
+BusName=com.system76.SystemUpdater.Local
+ExecStart=/usr/bin/com.system76.SystemUpdater
+
+[Install]
+WantedBy=default.target

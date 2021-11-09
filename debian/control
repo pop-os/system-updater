@@ -1,0 +1,23 @@
+Source: pop-system-updater
+Section: admin
+Priority: optional
+Maintainer: Michael Aaron Murphy <mmstick@pm.me>
+Build-Depends:
+    cargo,
+    rustc,
+    libdbus-1-dev,
+    libssl-dev,
+    pkg-config,
+    debhelper-compat (= 10),
+Standards-Version: 4.1.1
+Homepage: https://github.com/pop-os/system-updater
+
+Package: pop-system-updater
+Architecture: amd64 arm64
+Depends:
+  libcurl4,
+  libssl1.1,
+  ${misc:Depends},
+  ${shlibs:Depends}
+Description: Distribution Installer DBus Service
+

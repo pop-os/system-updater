@@ -1,0 +1,9 @@
+#!/bin/sh
+set -x
+
+systemctl enable --now com.system76.SystemUpdater
+systemctl --global enable com.system76.SystemUpdater.Local
+
+#DEBHELPER#
+
+exit 0
