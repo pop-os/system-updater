@@ -58,7 +58,7 @@ impl Service {
             }
         };
 
-        server::context(&connection, response).await;
+        server::context(connection, response).await;
 
         info!("system repair attempt complete");
     }
@@ -69,7 +69,7 @@ impl Service {
                 .await
         };
 
-        server::context(&connection, response).await;
+        server::context(connection, response).await;
     }
 }
 
@@ -151,10 +151,7 @@ pub async fn run() {
     };
 
     // Create a full reference of the scheduler.
-    let scheduler = match config.schedule.as_ref() {
-        Some(schedule) => Some(reschedule(schedule, sender.clone())),
-        None => None,
-    };
+    let scheduler = config.schedule.as_ref().map(|schedule| reschedule(schedule, sender.clone()));
 
     let scheduler = Full::new(RefCell::new(scheduler));
 
@@ -234,11 +231,7 @@ pub async fn run() {
                         config.auto_update = enable;
 
                         *scheduler1.borrow_mut() = if enable {
-                            if let Some(schedule) = config.schedule.as_ref() {
-                                Some(reschedule(schedule, sender.clone()))
-                            } else {
-                                None
-                            }
+                            config.schedule.as_ref().map(|schedule| reschedule(schedule, sender.clone()))
                         } else {
                             None
                         };
@@ -257,12 +250,7 @@ pub async fn run() {
 
                         config.schedule = schedule;
 
-                        *scheduler1.borrow_mut() = if let Some(schedule) = config.schedule.as_ref()
-                        {
-                            Some(reschedule(schedule, sender.clone()))
-                        } else {
-                            None
-                        };
+                        *scheduler1.borrow_mut() = config.schedule.as_ref().map(|schedule| reschedule(schedule, sender.clone()));
 
                         let config = config.clone();
                         let task = smol::spawn(async move {

@@ -4,7 +4,7 @@
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::path::{Path, PathBuf};
-use zbus::zvariant::Type;
+use zvariant::Type;
 
 pub const SYSTEM_CACHE: &str = "/var/cache/pop-system-updater/cache.ron";
 pub const SYSTEM_PATH: &str = "/etc/pop-system-updater/config.ron";
