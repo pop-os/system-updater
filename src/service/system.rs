@@ -18,6 +18,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use zbus::Connection;
 
+#[derive(Default)]
 pub struct Service {
     updating: Arc<AtomicBool>,
 }
@@ -70,14 +71,6 @@ impl Service {
         };
 
         server::context(connection, response).await;
-    }
-}
-
-impl Default for Service {
-    fn default() -> Self {
-        Service {
-            updating: Arc::default(),
-        }
     }
 }
 
@@ -151,7 +144,10 @@ pub async fn run() {
     };
 
     // Create a full reference of the scheduler.
-    let scheduler = config.schedule.as_ref().map(|schedule| reschedule(schedule, sender.clone()));
+    let scheduler = config
+        .schedule
+        .as_ref()
+        .map(|schedule| reschedule(schedule, sender.clone()));
 
     let scheduler = Full::new(RefCell::new(scheduler));
 
@@ -231,7 +227,10 @@ pub async fn run() {
                         config.auto_update = enable;
 
                         *scheduler1.borrow_mut() = if enable {
-                            config.schedule.as_ref().map(|schedule| reschedule(schedule, sender.clone()))
+                            config
+                                .schedule
+                                .as_ref()
+                                .map(|schedule| reschedule(schedule, sender.clone()))
                         } else {
                             None
                         };
@@ -250,7 +249,10 @@ pub async fn run() {
 
                         config.schedule = schedule;
 
-                        *scheduler1.borrow_mut() = config.schedule.as_ref().map(|schedule| reschedule(schedule, sender.clone()));
+                        *scheduler1.borrow_mut() = config
+                            .schedule
+                            .as_ref()
+                            .map(|schedule| reschedule(schedule, sender.clone()));
 
                         let config = config.clone();
                         let task = smol::spawn(async move {

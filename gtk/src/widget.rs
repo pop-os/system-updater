@@ -52,11 +52,11 @@ impl SettingsWidget {
             ..set_selection_mode(gtk::SelectionMode::None);
             ..set_header_func(Some(Box::new(separator_header)));
             ..add(&{
-                automatic_updates = gtk::SwitchBuilder::new()
+                automatic_updates = gtk::Switch::builder()
                     .valign(gtk::Align::Center)
                     .build();
 
-                let label = gtk::LabelBuilder::new()
+                let label = gtk::Label::builder()
                     .label(&fl!("automatic-updates-label"))
                     .xalign(0.0)
                     .hexpand(true)
@@ -72,19 +72,19 @@ impl SettingsWidget {
                 }
             });
             ..add({
-                let button_image = gtk::ImageBuilder::new()
+                let button_image = gtk::Image::builder()
                     .icon_name("go-next-symbolic")
                     .icon_size(gtk::IconSize::Button)
                     .build();
 
-                schedule_label = gtk::LabelBuilder::new()
+                schedule_label = gtk::Label::builder()
                     .label(&fl!("automatically-install-label"))
                     .xalign(0.0)
                     .hexpand(true)
                     .vexpand(true)
                     .build();
 
-                schedule_description = gtk::LabelBuilder::new()
+                schedule_description = gtk::Label::builder()
                     .xalign(0.0)
                     .valign(gtk::Align::Center)
                     .vexpand(true)
@@ -104,7 +104,7 @@ impl SettingsWidget {
                 }
             });
             ..add(&{
-                let label = gtk::LabelBuilder::new()
+                let label = gtk::Label::builder()
                     .label(&fl!("update-notifications-label"))
                     .xalign(0.0)
                     .hexpand(true)

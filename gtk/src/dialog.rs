@@ -31,11 +31,11 @@ impl Dialog {
             ..set_selection_mode(gtk::SelectionMode::None);
             ..set_header_func(Some(Box::new(separator_header)));
             ..add(&{
-                when_available = gtk::SwitchBuilder::new()
+                when_available = gtk::Switch::builder()
                     .valign(gtk::Align::Center)
                     .build();
 
-                let label = gtk::LabelBuilder::new()
+                let label = gtk::Label::builder()
                     .label(&fl!("update-when-available-label"))
                     .xalign(0.0)
                     .hexpand(true)
@@ -64,7 +64,7 @@ impl Dialog {
                     ..append_text(&fl!("time-weekdays"));
                 };
 
-                schedule_label = gtk::LabelBuilder::new()
+                schedule_label = gtk::Label::builder()
                     .label(&fl!("schedule-label"))
                     .xalign(0.0)
                     .hexpand(true)
@@ -116,7 +116,7 @@ impl Dialog {
             });
         };
 
-        let dialog = gtk::DialogBuilder::new()
+        let dialog = gtk::Dialog::builder()
             .title(&fl!("schedule-dialog-title"))
             .attached_to(widget)
             .build();

@@ -9,35 +9,35 @@ license = "MPL-2.0"
 members = ["gtk"]
 
 [dependencies]
-anyhow = "1.0.51"
-apt-cmd = "0.2.1"
+anyhow = "1.0.56"
+apt-cmd = "0.3.0"
 as-result = "0.2.1"
 async-fs = "1.5.0"
 async-io = "1.6.0"
 async-process = "1.3.0"
-async-stream = "0.3.2"
-better-panic = "0.2.0"
+async-stream = "0.3.3"
+better-panic = "0.3.0"
 bytesize = "1.1.0"
 chrono = { version = "0.4.19", features = ["serde"] }
 clokwerk = { git = "https://github.com/mmstick/clokwerk", branch = "serde" }
-enumflags2 = "0.7.2"
-fork = "0.1.18"
-futures = "0.3.18"
-isahc = "1.6.0"
-libc = "0.2.111"
-notify-rust = { version = "4.5.5", default-features = false, features = ["dbus"] }
+enumflags2 = "0.7.3"
+fork = "0.1.19"
+futures = "0.3.21"
+isahc = "1.7.0"
+libc = "0.2.121"
+notify-rust = { version = "4.5.7", default-features = false, features = ["dbus"] }
 os-release = "0.1.0"
 postage = "0.4.1"
 ron = "0.7.0"
-serde = { version = "1.0.131", features = ["derive"] }
+serde = { version = "1.0.136", features = ["derive"] }
 serde_repr = "0.1.7"
 smol = "1.2.5"
 static-rc = "0.5.0"
-tracing = "0.1.29"
-tracing-subscriber = { version = "0.3.3", features = ["env-filter"] }
+tracing = "0.1.32"
+tracing-subscriber = { version = "0.3.9", features = ["env-filter"] }
 users = "0.11.0"
 whitespace-conf = "1.0.0"
-zbus = "2.0.0"
-zvariant = { version = "3.0.0", features = ["enumflags2"] }
+zbus = "2.1.1"
+zvariant = { version = "3.1.2", features = ["enumflags2"] }
 
 [features]

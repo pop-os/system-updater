@@ -6,7 +6,7 @@ use postage::sink::Sink;
 use std::future::Future;
 
 pub fn glib_spawn<F: Future<Output = ()> + 'static>(future: F) {
-    glib::MainContext::default().spawn_local(future)
+    glib::MainContext::default().spawn_local(future);
 }
 
 pub fn glib_send<E: 'static, S: Sink<Item = E> + Unpin + 'static>(mut sink: S, event: E) {
@@ -16,7 +16,7 @@ pub fn glib_send<E: 'static, S: Sink<Item = E> + Unpin + 'static>(mut sink: S, e
 }
 
 pub fn option_container() -> gtk::Grid {
-    gtk::GridBuilder::new()
+    gtk::Grid::builder()
         .margin_start(20)
         .margin_end(20)
         .margin_top(8)
