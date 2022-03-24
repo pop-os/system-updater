@@ -9,8 +9,11 @@ VENDOR ?= 1
 	dh $@
 
 override_dh_auto_clean:
-	cargo clean
-	if ! ischroot; then \
+	if test "${CLEAN}" = "1"; then \
+		cargo clean; \
+	fi
+
+	if ! ischroot && test "${VENDOR}" = "1"; then \
 		mkdir -p .cargo; \
 		cargo vendor --sync gtk/Cargo.toml | head -n -1 > .cargo/config; \
 		echo 'directory = "vendor"' >> .cargo/config; \
