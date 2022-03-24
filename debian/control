@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Michael Aaron Murphy <mmstick@pm.me>
 Build-Depends:
     cargo,
+    just,
     rustc,
     libdbus-1-dev,
     libssl-dev,

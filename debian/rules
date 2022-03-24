@@ -1,20 +1,22 @@
 #!/usr/bin/make -f
 
-export sysconfdir = "/usr/share/"
-export VENDOR ?= 1
-export CLEAN ?= 1
-export DESTDIR=debian/tmp
+DESTDIR=debian/tmp
+CLEAN ?= 1
+DEBUG ?= 0
+VENDOR ?= 1
 
 %:
 	dh $@
 
 override_dh_auto_clean:
-ifeq ($(CLEAN),1)
-	make clean
-endif
-ifeq ($(VENDOR),1)
-	ischroot || make vendor
-endif
+	cargo clean
+	if ! ischroot; then \
+		mkdir -p .cargo; \
+		cargo vendor --sync gtk/Cargo.toml | head -n -1 > .cargo/config; \
+		echo 'directory = "vendor"' >> .cargo/config; \
+		tar pcf vendor.tar vendor; \
+		rm -rf vendor; \
+	fi
 
 override_dh_auto_build:
-	CARGO_HOME="$$(pwd)/target/cargo" make DESTDIR=$(DESTDIR)
+	just rootdir=$(DESTDIR) debug=$(DEBUG) vendor=$(VENDOR) package_build
