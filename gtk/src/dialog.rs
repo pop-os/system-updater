@@ -202,12 +202,12 @@ impl Dialog {
                 move |_| update_config()
             });
 
-            hour.connect_changed({
+            hour.connect_value_notify({
                 let update_config = update_config.clone();
                 move |_| update_config()
             });
 
-            minute.connect_changed({
+            minute.connect_value_notify({
                 let update_config = update_config.clone();
                 move |_| update_config()
             });
