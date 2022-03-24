@@ -22,7 +22,7 @@ target_systemd_service := rootdir + libdir + '/systemd/system/' + id + '.service
 target_session_service := rootdir + libdir + '/systemd/user/' + id_local + '.service'
 
 # Compiles pop-system-updater.
-all: _extract-vendor
+all: _extract_vendor
     cargo build {{cargo_args}}
 
 # Remove Cargo build artifacts.
@@ -34,7 +34,7 @@ distclean:
     rm -rf .cargo vendor vendor.tar target
 
 # Run the GTK UI for testing purposes.
-gtk-test:
+gtk_test:
     cargo run -p pop-system-updater-gtk {{cargo_args}}
 
 # Install the compiled project into the system.
@@ -60,11 +60,11 @@ vendor:
 # Used by packaging systems to generate a source package.
 package_source:
     #!/usr/bin/env sh
-    if test {{clean}} -eq 1; then
+    if test {{clean}} = 1; then
         just clean
     fi
 
-    if test {{vendor}} -eq 1; then
+    if test {{vendor}} = 1; then
         ischroot || just vendor
     fi
 
@@ -74,8 +74,8 @@ package_build:
         just debug={{debug}} vendor={{vendor}} sysconfdir='/usr/share'
 
 # Extracts vendored dependencies if vendor=1
-_extract-vendor:
+_extract_vendor:
     #!/usr/bin/env sh
-    if test {{vendor}} -eq 1; then
+    if test {{vendor}} = 1; then
         rm -rf vendor; tar pxf vendor.tar
     fi
