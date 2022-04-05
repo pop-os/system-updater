@@ -5,7 +5,7 @@ Description=Distribution updater
 [Service]
 Type=dbus
 BusName=com.system76.SystemUpdater
-ExecStart=/usr/bin/com.system76.SystemUpdater
+ExecStart=/usr/bin/pop-system-updater
 Restart=on-failure
 KillMode=process
 SendSIGKILL=no

@@ -8,16 +8,16 @@ vendor_args := if vendor == '1' { '--frozen --offline' } else { '' }
 debug_args := if debug == '1' { '' } else { '--release' }
 cargo_args := vendor_args + ' ' + debug_args
 
-sysconfdir := '/etc'
+sysconfdir := '/usr/share'
 bindir := prefix + '/bin'
-libdir := prefix + '/lib'
+libdir := '/lib'
 
 id := 'com.system76.SystemUpdater'
 id_local := id + '.Local'
 binary := 'pop-system-updater'
 
-target_bin := rootdir + bindir + '/' + id
-target_dbus_conf := rootdir + sysconfdir + '/dbus-1/systemd./' + id + '.conf'
+target_bin := rootdir + bindir + '/' + binary
+target_dbus_conf := rootdir + sysconfdir + '/dbus-1/system.d/' + id + '.conf'
 target_systemd_service := rootdir + libdir + '/systemd/system/' + id + '.service'
 target_session_service := rootdir + libdir + '/systemd/user/' + id_local + '.service'
 
