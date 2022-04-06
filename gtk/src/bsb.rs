@@ -140,7 +140,10 @@ impl BetterSpinButton {
 }
 
 fn create_button(icon: &str) -> gtk::Button {
-    gtk::Button::from_icon_name(Some(icon), gtk::IconSize::Button)
+    cascade! {
+        gtk::Button::from_icon_name(Some(icon), gtk::IconSize::Button);
+        ..set_can_focus(false);
+    }
 }
 
 fn format_number(value: u32, padding: usize) -> String {
