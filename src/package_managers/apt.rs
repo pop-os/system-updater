@@ -76,7 +76,7 @@ pub async fn repair() -> anyhow::Result<()> {
 }
 
 async fn system_update(service_requires_update: &mut bool) -> anyhow::Result<()> {
-    update_package_lists().await?;
+    update_package_lists().await;
 
     info!("getting list of packages to update");
     let packages = packages_to_fetch()
@@ -101,13 +101,17 @@ async fn system_update(service_requires_update: &mut bool) -> anyhow::Result<()>
     Ok(())
 }
 
-pub async fn update_package_lists() -> anyhow::Result<()> {
+pub async fn update_package_lists() {
     info!("updating package lists");
     apt_lock_wait().await;
-    AptGet::new()
+    let result = AptGet::new()
         .update()
         .await
-        .context("could not `apt update` package lists")
+        .context("could not `apt update` package lists");
+
+    if let Err(why) = result {
+        error!("potential issue with package lists configuration: {}", why);
+    }
 }
 
 pub async fn packages_to_fetch() -> anyhow::Result<Vec<String>> {
