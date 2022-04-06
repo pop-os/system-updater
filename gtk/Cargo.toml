@@ -7,6 +7,7 @@ license = "MPL-2.0"
 [dependencies]
 cascade = "1.0.0"
 chrono = { version = "0.4.19", features = ["serde"] }
+flume = "0.10.12"
 futures = "0.3.21"
 gio = "0.15.10"
 glib = "0.15.10"

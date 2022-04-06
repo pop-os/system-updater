@@ -4,6 +4,7 @@
 #[macro_use]
 extern crate cascade;
 
+pub(crate) mod bsb;
 pub(crate) mod dialog;
 mod localize;
 pub(crate) mod proxy;
