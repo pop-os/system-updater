@@ -22,7 +22,7 @@ impl BetterSpinButton {
         // Decrease the value while preventing it from exceeding the min.
         let decrease = move |value: u32, inc: u32| {
             if value < inc {
-                0
+                min
             } else {
                 (value - inc).max(min)
             }
@@ -32,12 +32,24 @@ impl BetterSpinButton {
             gtk::Entry::default();
             ..set_max_width_chars(2);
             ..set_width_chars(2);
+            // // Configure backspace
+            // ..connect_backspace(move |entry| {
+            //     let value = entry.text().as_str().parse::<u32>().unwrap_or(0) / 10;
+            //     entry.set_text(&*format_number(value, padding as usize));
+            // });
             // Configure arrow key presses to increment and decrement the value
             ..connect_key_press_event(move |entry, event| {
-                let current = || entry.text().as_str().parse::<u32>().unwrap_or(0);
+                let current = || entry.text().as_str().parse::<u32>().unwrap_or(min);
                 let set = |value| entry.set_text(&*format_number(value, padding as usize));
 
+                eprintln!("event.keycode: {:?}", event.keycode());
+
                 match event.keycode() {
+                    // Some(22) => {
+                    //     if entry.cursor_position() ==
+                    //     set(current() / 10 * 10);
+
+                    // },
                     Some(111) => set(increase(current(), inc_large)),
                     Some(113) => set(decrease(current(), inc_small)),
                     Some(114) => set(increase(current(), inc_small)),
