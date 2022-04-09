@@ -23,7 +23,7 @@ target_session_service := rootdir + libdir + '/systemd/user/' + id_local + '.ser
 
 # Compiles pop-system-updater.
 all: _extract_vendor
-    cargo build {{cargo_args}}
+    cargo build -p pop-system-updater {{cargo_args}}
 
 # Remove Cargo build artifacts.
 clean:
@@ -52,6 +52,7 @@ uninstall:
 vendor:
     mkdir -p .cargo
     cargo vendor --sync gtk/Cargo.toml \
+        --sync daemon/Cargo.toml \
         | head -n -1 > .cargo/config
     echo 'directory = "vendor"' >> .cargo/config
     tar pcf vendor.tar vendor

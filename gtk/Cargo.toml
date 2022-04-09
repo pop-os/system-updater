@@ -15,7 +15,7 @@ gtk = "0.15.4"
 i18n-embed = { version = "0.13.4", features = ["fluent-system", "desktop-requester"] }
 i18n-embed-fl = "0.6.4"
 once_cell = "1.10.0"
-pop-system-updater = { path = "../" }
+pop-system-updater = { path = "../daemon" }
 postage = "0.4.1"
 ron = "0.7.0"
 rust-embed = "6.3.0"
