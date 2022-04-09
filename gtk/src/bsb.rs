@@ -3,7 +3,9 @@ use gtk::prelude::*;
 pub struct BetterSpinButton {
     pub root: gtk::Box,
     entry: gtk::Entry,
-    pub padding: u32,
+    padding: u32,
+    min: u32,
+    max: u32,
 }
 
 impl std::ops::Deref for BetterSpinButton {
@@ -32,24 +34,12 @@ impl BetterSpinButton {
             gtk::Entry::default();
             ..set_max_width_chars(2);
             ..set_width_chars(2);
-            // // Configure backspace
-            // ..connect_backspace(move |entry| {
-            //     let value = entry.text().as_str().parse::<u32>().unwrap_or(0) / 10;
-            //     entry.set_text(&*format_number(value, padding as usize));
-            // });
             // Configure arrow key presses to increment and decrement the value
             ..connect_key_press_event(move |entry, event| {
                 let current = || entry.text().as_str().parse::<u32>().unwrap_or(min);
                 let set = |value| entry.set_text(&*format_number(value, padding as usize));
 
-                eprintln!("event.keycode: {:?}", event.keycode());
-
                 match event.keycode() {
-                    // Some(22) => {
-                    //     if entry.cursor_position() ==
-                    //     set(current() / 10 * 10);
-
-                    // },
                     Some(111) => set(increase(current(), inc_large)),
                     Some(113) => set(decrease(current(), inc_small)),
                     Some(114) => set(increase(current(), inc_small)),
@@ -98,6 +88,8 @@ impl BetterSpinButton {
             entry,
             root,
             padding,
+            max,
+            min,
         }
     }
 
@@ -111,22 +103,27 @@ impl BetterSpinButton {
         let mut last_known = self.entry.text().to_string();
 
         let entry = self.entry.downgrade();
+        let min = self.min;
+        let max = self.max;
+        let padding = self.padding;
+
         crate::utils::glib_spawn(async move {
             while let Ok(text) = rx.recv_async().await {
-                if text.as_str().parse::<u32>().is_ok() {
-                    func();
-
-                    let nchars = text.as_str().len();
-
-                    if nchars == 1 {
-                        last_known = ["0", text.as_str()].concat();
-                    } else if nchars > 2 {
-                        last_known = text.as_str()[nchars - 2..].to_owned();
-                    } else {
-                        last_known = text.to_string();
-                        continue;
+                let new_value = match text.as_str().parse::<u32>() {
+                    Ok(value) => {
+                        if value < min {
+                            min
+                        } else if value > max {
+                            max
+                        } else {
+                            value
+                        }
                     }
-                }
+
+                    Err(_) => min,
+                };
+
+                let new_value = format_number(new_value, padding as usize);
 
                 let entry = match entry.upgrade() {
                     Some(entry) => entry,
@@ -134,9 +131,15 @@ impl BetterSpinButton {
                 };
 
                 entry.block_signal(&id);
-                entry.set_text(&*last_known);
-                entry.set_position(last_known.len() as i32);
-                entry.unblock_signal(&id)
+                entry.set_text(&*new_value);
+                entry.set_position(new_value.len() as i32);
+                entry.unblock_signal(&id);
+
+                if new_value != last_known {
+                    last_known = new_value;
+
+                    func();
+                }
             }
         })
     }
