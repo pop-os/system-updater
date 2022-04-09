@@ -149,7 +149,7 @@ impl Dialog {
 
             when_available.set_active(config.schedule.is_none());
 
-            let (am, hour_value) = if schedule.hour >= 12 {
+            let (am, hour_value) = if schedule.hour > 12 {
                 (1, schedule.hour - 12)
             } else {
                 (0, schedule.hour)
