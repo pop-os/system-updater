@@ -128,8 +128,8 @@ pub async fn run() {
                 Interval::Weekdays => ClokwerkInterval::Weekday,
             })
             .at_time(NaiveTime::from_hms(
-                schedule.hour as u32,
-                schedule.minute as u32,
+                (schedule.hour as u32).min(23),
+                (schedule.minute as u32).min(59),
                 0,
             ))
             .run(move || {

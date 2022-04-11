@@ -12,6 +12,8 @@ mod signal_handler;
 mod utils;
 
 fn main() {
+    better_panic::install();
+
     std::env::set_var("LANG", "C");
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "info");
