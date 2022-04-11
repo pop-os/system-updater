@@ -136,6 +136,7 @@ impl Dialog {
                     Config::default_schedule()
                 }
             };
+
             interval.set_active(Some(match schedule.interval {
                 Interval::Monday => 0,
                 Interval::Tuesday => 1,
@@ -149,14 +150,14 @@ impl Dialog {
 
             when_available.set_active(config.schedule.is_none());
 
-            let (am, hour_value) = if schedule.hour > 12 {
+            let (am, hour_value) = if schedule.hour > 11 {
                 (1, schedule.hour - 12)
             } else {
                 (0, schedule.hour)
             };
 
             time_of_day.set_active(Some(am));
-            hour.set_value(hour_value as u32);
+            hour.set_value(hour_value as u32 + 1);
             minute.set_value(schedule.minute as u32);
 
             // Connect widgets now that state is set.
@@ -214,7 +215,7 @@ impl Dialog {
                         update_sensitivity(config.schedule.is_none());
                         let pm = time_of_day.active() == Some(1);
 
-                        let mut hour = hour.value() as u8;
+                        let mut hour = hour.value() as u8 - 1;
 
                         if pm {
                             hour += 12;

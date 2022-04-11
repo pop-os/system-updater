@@ -168,10 +168,10 @@ impl SettingsWidget {
             let update_schedule_description = |config: &Config| {
                 let text: String = if config.auto_update {
                     if let Some(schedule) = config.schedule.as_ref() {
-                        let (hour, am_pm) = if schedule.hour <= 12 {
-                            (schedule.hour, fl!("time-am"))
+                        let (hour, am_pm) = if schedule.hour < 12 {
+                            (schedule.hour + 1, fl!("time-am"))
                         } else {
-                            (schedule.hour - 12, fl!("time-pm"))
+                            (schedule.hour - 11, fl!("time-pm"))
                         };
 
                         format!(
