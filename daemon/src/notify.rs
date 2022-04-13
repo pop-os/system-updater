@@ -26,20 +26,19 @@ pub async fn updates_available() {
         "System updates are available to install",
         "Click here to update the system",
         || {
-            smol::spawn(async move {
-                let _ = async_process::Command::new("io.elementary.appcenter")
+            tokio::spawn(async move {
+                let _ = tokio::process::Command::new("io.elementary.appcenter")
                     .arg("-u")
                     .status()
                     .await;
-            })
-            .detach();
+            });
         },
     )
 }
 
 /// Restart the appcenter to force that the packagekit cache is refreshed.
 async fn restart_appcenter() {
-    let _ = async_process::Command::new("killall")
+    let _ = tokio::process::Command::new("killall")
         .arg("io.elementary.appcenter")
         .status()
         .await;

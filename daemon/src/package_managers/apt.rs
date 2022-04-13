@@ -7,8 +7,8 @@ use apt_cmd::fetch::{FetchEvents, PackageFetcher};
 use apt_cmd::lock::apt_lock_wait;
 use apt_cmd::request::Request as AptRequest;
 use apt_cmd::{AptGet, AptMark, Dpkg};
-use async_process::{Child, Command, Stdio};
-use futures::prelude::*;
+use tokio::process::{Child, Command};
+use std::process::Stdio;
 use futures::Stream;
 use futures::StreamExt;
 use std::collections::HashSet;
@@ -126,7 +126,7 @@ pub async fn packages_to_fetch() -> anyhow::Result<Vec<String>> {
     info!("debian packages requiring updates: {}", packages.len());
 
     child
-        .status()
+        .wait()
         .await
         .context("could not check for updates from apt")?;
 
@@ -225,17 +225,23 @@ pub async fn upgradable_packages() -> anyhow::Result<(Child, Packages)> {
     let stdout = child.stdout.take().unwrap();
 
     let stream = Box::pin(async_stream::stream! {
-        let lines = smol::io::BufReader::new(stdout).lines();
+        use tokio::io::AsyncBufReadExt;
+        let mut reader = tokio::io::BufReader::new(stdout);
+        let mut buffer = String::new();
 
-        futures::pin_mut!(lines);
+        while let Ok(read) = reader.read_line(&mut buffer).await {
+            if read == 0 {
+                break
+            }
 
-        while let Some(Ok(line)) = lines.next().await {
-            let mut words = line.split_ascii_whitespace();
+            let mut words = buffer.split_ascii_whitespace();
             if let Some("Inst") = words.next() {
                 if let Some(package) = words.next() {
                     yield package.into();
                 }
             }
+
+            buffer.clear();
         }
     });
 

@@ -124,7 +124,7 @@ pub async fn write_system_cache(cache: &Cache) {
 async fn load<T: Default + DeserializeOwned + Serialize>(path: &Path) -> T {
     info!("loading config: {:?}", path);
     let file;
-    if let Ok(file_) = async_fs::read_to_string(path).await {
+    if let Ok(file_) = tokio::fs::read_to_string(path).await {
         file = file_;
         match ron::from_str::<T>(&file) {
             Ok(config) => return config,
@@ -143,7 +143,7 @@ async fn write<T: Serialize>(path: &Path, config: &T) {
     info!("writing config: {:?}", path);
 
     if let Some(parent) = path.parent() {
-        let _ = async_fs::create_dir(parent).await;
+        let _ = tokio::fs::create_dir(parent).await;
     }
 
     let config = match ron::to_string(config) {
@@ -154,7 +154,7 @@ async fn write<T: Serialize>(path: &Path, config: &T) {
         }
     };
 
-    if let Err(why) = async_fs::write(path, config.as_bytes()).await {
+    if let Err(why) = tokio::fs::write(path, config.as_bytes()).await {
         error!("failed to write config file: {}", why);
     }
 }

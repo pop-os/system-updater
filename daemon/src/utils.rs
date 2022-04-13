@@ -3,7 +3,7 @@
 
 use anyhow::Context;
 use as_result::IntoResult;
-use async_process::Command;
+use tokio::process::Command;
 
 pub async fn async_commands(cmds: &[&[&str]]) -> anyhow::Result<()> {
     for command in cmds {

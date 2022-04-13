@@ -8,8 +8,6 @@ use pop_system_updater::dbus::PopService;
 use pop_system_updater::dbus::{
     client::ClientProxy, local_server::LocalServer, LocalEvent, IFACE_LOCAL,
 };
-use postage::mpsc;
-use postage::prelude::*;
 use std::time::{Duration, SystemTime};
 use zbus::Connection;
 
@@ -23,7 +21,7 @@ pub async fn run() -> anyhow::Result<()> {
         .context("could not get proxy from connection")?;
 
     let mut config = config::load_session_config().await;
-    let (mut sender, mut receiver) = mpsc::channel(1);
+    let (sender, receiver) = flume::bounded(1);
 
     let connection = Connection::session()
         .await
@@ -88,12 +86,14 @@ pub async fn run() -> anyhow::Result<()> {
     check_for_updates(&config, cache).await;
 
     let scheduler = async move {
-        let _ = sender.send(LocalEvent::CheckUpdates).await;
-        async_io::Timer::after(Duration::from_secs(SECONDS_IN_DAY)).await;
+        loop {
+            let _ = sender.send(LocalEvent::CheckUpdates);
+            tokio::time::sleep(Duration::from_secs(SECONDS_IN_DAY)).await;
+        }
     };
 
     let event_loop = async move {
-        while let Some(event) = receiver.recv().await {
+        while let Ok(event) = receiver.recv_async().await {
             debug!("{:?}", event);
             match event {
                 LocalEvent::CheckUpdates => check_for_updates(&config, cache).await,

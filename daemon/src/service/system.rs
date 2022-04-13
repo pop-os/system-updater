@@ -1,8 +1,7 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
-use chrono::NaiveTime;
-use clokwerk::{AsyncScheduler, Interval as ClokwerkInterval, Job};
+use chrono::Local;
 use config::{Interval, Schedule};
 use pop_system_updater::config;
 use pop_system_updater::dbus::PopService;
@@ -10,9 +9,8 @@ use pop_system_updater::dbus::{
     server::{self, Server},
     Event, IFACE,
 };
-use postage::mpsc::{self, Sender};
-use postage::prelude::*;
-use std::cell::RefCell;
+use flume::Sender;
+use pop_task_scheduler::*;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -74,14 +72,11 @@ impl Service {
     }
 }
 
-// Compile-time reference counter which can be split in half.
-type Full<T> = static_rc::StaticRc<T, 3, 3>;
-
 pub async fn run() {
     info!("initiating system service");
     crate::signal_handler::init();
 
-    let (sender, mut receiver) = mpsc::channel(4);
+    let (sender, receiver) = flume::bounded(4);
 
     let service = Service::default();
 
@@ -112,92 +107,47 @@ pub async fn run() {
 
     let mut config = config::load_system_config().await;
 
-    // The rescheduler closure will reload the service's scheduler from the `Config`.
-    let reschedule = |schedule: &Schedule, sender: Sender<Event>| {
-        let mut scheduler = AsyncScheduler::new();
+    let (mut scheduler, scheduler_service) = Scheduler::<Local>::launch(tokio::time::sleep);
 
-        scheduler
-            .every(match schedule.interval {
-                Interval::Monday => ClokwerkInterval::Monday,
-                Interval::Tuesday => ClokwerkInterval::Tuesday,
-                Interval::Wednesday => ClokwerkInterval::Wednesday,
-                Interval::Thursday => ClokwerkInterval::Thursday,
-                Interval::Friday => ClokwerkInterval::Friday,
-                Interval::Saturday => ClokwerkInterval::Saturday,
-                Interval::Sunday => ClokwerkInterval::Sunday,
-                Interval::Weekdays => ClokwerkInterval::Weekday,
-            })
-            .at_time(NaiveTime::from_hms(
-                (schedule.hour as u32).min(23),
-                (schedule.minute as u32).min(59),
-                0,
-            ))
-            .run(move || {
-                let mut sender = sender.clone();
-                async move {
-                    info!("initiating scheduled system update");
-                    let _ = sender.send(Event::AutoUpdate).await;
-                }
-            });
+    let mut update_job: Option<JobId> = None;
 
-        scheduler
+    if let Some(ref conf) = config.schedule {
+        update_job = Some(schedule_job(&mut scheduler, conf, &sender));
     };
-
-    // Create a full reference of the scheduler.
-    let scheduler = config
-        .schedule
-        .as_ref()
-        .map(|schedule| reschedule(schedule, sender.clone()));
-
-    let scheduler = Full::new(RefCell::new(scheduler));
-
-    // Create two halves of the full reference to be given to the two futures below.
-    let (scheduler1, scheduler2) = Full::split::<2, 1>(scheduler);
 
     let sig_duration = std::time::Duration::from_secs(1);
 
-    let _ = std::thread::spawn({
-        let mut sender = sender.clone();
-        move || {
-            async_io::block_on(async move {
+    futures::join!(
+        scheduler_service,
+        {
+            let sender = sender.clone();
+            async move {
                 loop {
-                    async_io::Timer::after(sig_duration).await;
+                    tokio::time::sleep(sig_duration).await;
                     if crate::signal_handler::status().is_some() {
                         info!("Found interrupt");
-                        let _ = sender.send(Event::Exit).await;
+                        let _ = sender.send(Event::Exit);
                         break;
                     }
                 }
-            })
-        }
-    });
-
-    let mut sender2 = sender.clone();
-
-    futures::join!(
-        restart_session_services(),
-        // Check for updates every 12 hours.
-        async move {
-            loop {
-                let _ = sender2.send(Event::Update).await;
-                async_io::Timer::after(std::time::Duration::from_secs(60 * 60 * 12)).await;
             }
         },
-        // Process events from the scheduler, which are sent to the event handler.
-        async move {
-            loop {
-                // Updates should trigger no later than 1 minute after time elapsed.
-                if let Some(scheduler) = scheduler2.borrow_mut().as_mut() {
-                    scheduler.run_pending().await;
+        restart_session_services(),
+        // Check for updates every 12 hours.
+        {
+            let sender = sender.clone();
+            async move {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(60 * 60 * 12));
+                loop {
+                    interval.tick().await;
+                    let _ = sender.send(Event::Update);
                 }
-
-                async_io::Timer::after(std::time::Duration::from_secs(60)).await;
             }
         },
         // The event handler, which processes all requests from DBus and the scheduler.
         async move {
             info!("listening for events");
-            while let Some(event) = receiver.recv().await {
+            while let Ok(event) = receiver.recv_async().await {
                 info!("received event: {:?}", event);
                 match event {
                     Event::AutoUpdate => {
@@ -225,23 +175,21 @@ pub async fn run() {
                         info!("setting auto-update mode to {}", enable);
 
                         config.auto_update = enable;
+                        if let Some(id) = update_job.take() {
+                            scheduler.remove(id);
+                        }
 
-                        *scheduler1.borrow_mut() = if enable {
-                            config
-                                .schedule
-                                .as_ref()
-                                .map(|schedule| reschedule(schedule, sender.clone()))
-                        } else {
-                            None
-                        };
+                        if enable {
+                            if let Some(ref conf) = config.schedule {
+                                update_job = Some(schedule_job(&mut scheduler, conf, &sender));
+                            }
+                        }
 
                         let config = config.clone();
-                        let task = smol::spawn(async move {
+                        tokio::spawn(async move {
                             config::write_system_config(&config).await;
                             info!("system configuration file updated");
                         });
-
-                        task.detach();
                     }
 
                     Event::SetSchedule(schedule) => {
@@ -249,18 +197,19 @@ pub async fn run() {
 
                         config.schedule = schedule;
 
-                        *scheduler1.borrow_mut() = config
-                            .schedule
-                            .as_ref()
-                            .map(|schedule| reschedule(schedule, sender.clone()));
+                        if let Some(id) = update_job.take() {
+                            scheduler.remove(id);
+                        }
+
+                        if let Some(ref conf) = config.schedule {
+                            update_job = Some(schedule_job(&mut scheduler, conf, &sender));
+                        }
 
                         let config = config.clone();
-                        let task = smol::spawn(async move {
+                        tokio::spawn(async move {
                             config::write_system_config(&config).await;
                             info!("system configuration file updated");
                         });
-
-                        task.detach();
                     }
 
                     Event::Exit => {
@@ -301,4 +250,31 @@ async fn restart_session_services() {
             .await;
         })
         .await;
+}
+
+fn schedule_job(scheduler: &mut Scheduler<Local>, schedule: &Schedule, sender: &Sender<Event>) -> JobId {
+    info!("scheduling for {:?}", schedule);
+    let sender = sender.clone();
+    scheduler.insert(Job::cron(&*cron_expression(schedule)).unwrap(), move |_| {
+        info!("UPDATE TRIGGERED");
+        let _ = sender.send(Event::Update);
+    })
+}
+
+fn cron_expression(schedule: &Schedule) -> String {
+    let days: &str = match schedule.interval {
+        Interval::Sunday => "0",
+        Interval::Monday => "1",
+        Interval::Tuesday => "2",
+        Interval::Wednesday => "3",
+        Interval::Thursday => "4",
+        Interval::Friday => "5",
+        Interval::Saturday => "6",
+        Interval::Weekdays => "1-5",
+    };
+
+    let minute = schedule.minute.min(59);
+    let hour = (schedule.hour + 1).min(24);
+
+    format!("0 {minute} {hour} * * {days}")
 }

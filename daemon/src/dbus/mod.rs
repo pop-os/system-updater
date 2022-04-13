@@ -7,7 +7,6 @@ pub mod local_server;
 pub mod server;
 
 use crate::config::{Frequency, LocalConfig, Schedule};
-use postage::prelude::Sink;
 
 // Where this service's interface is being served at.
 pub const IFACE: &str = "/com/system76/SystemUpdater";
@@ -31,12 +30,12 @@ pub enum LocalEvent {
 }
 
 pub struct PopService<E> {
-    pub sender: postage::mpsc::Sender<E>,
+    pub sender: flume::Sender<E>,
 }
 
 impl<E: std::fmt::Debug> PopService<E> {
-    async fn send(&mut self, event: E) -> zbus::fdo::Result<()> {
-        if let Err(why) = self.sender.send(event).await {
+    fn send(&mut self, event: E) -> zbus::fdo::Result<()> {
+        if let Err(why) = self.sender.send(event) {
             Err(zbus::fdo::Error::Failed(format!("{}", why)))
         } else {
             Ok(())

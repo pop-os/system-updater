@@ -11,9 +11,8 @@ mod service;
 mod signal_handler;
 mod utils;
 
-fn main() {
-    better_panic::install();
-
+#[tokio::main]
+async fn main() {
     std::env::set_var("LANG", "C");
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "info");
@@ -29,13 +28,11 @@ fn main() {
     // Colorful and useful error messages in unlikely event that the service crashes.
     better_panic::install();
 
-    smol::block_on(async move {
-        // If root then system service, else local session service.
-        let effective_uid = users::get_effective_uid();
-        if effective_uid == 0 {
-            crate::service::system::run().await;
-        } else if accounts::is_desktop_account(effective_uid) {
-            let _ = dbg!(crate::service::session::run().await);
-        }
-    });
+    // If root then system service, else local session service.
+    let effective_uid = users::get_effective_uid();
+    if effective_uid == 0 {
+        crate::service::system::run().await;
+    } else if accounts::is_desktop_account(effective_uid) {
+        let _ = crate::service::session::run().await;
+    }
 }

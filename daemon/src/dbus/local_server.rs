@@ -25,10 +25,8 @@ impl LocalServer {
     ) -> zbus::fdo::Result<()> {
         self.config.notification_frequency = frequency;
 
-        let _ = futures::join!(
-            crate::config::write_session_config(&self.config),
-            self.service.send(LocalEvent::UpdateConfig(self.config.clone()))
-        );
+        crate::config::write_session_config(&self.config).await;
+        let _ = self.service.send(LocalEvent::UpdateConfig(self.config.clone()));
 
         Ok(())
     }
