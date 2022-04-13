@@ -164,7 +164,13 @@ impl SettingsWidget {
             inner: option_frame(content.upcast_ref::<gtk::Widget>()).upcast::<gtk::Widget>(),
         };
 
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
         glib_spawn(async move {
+            let _context = runtime.enter();
             let update_schedule_description = |config: &Config| {
                 let text: String = if config.auto_update {
                     if let Some(schedule) = config.schedule.as_ref() {

@@ -10,8 +10,7 @@ use pop_system_updater_gtk::SettingsWidget;
 
 pub const APP_ID: &str = "com.system76.UpgradeManager";
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() {
+fn main() {
     tracing_subscriber::fmt()
         .with_writer(std::io::stderr)
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())

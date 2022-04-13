@@ -21,7 +21,6 @@ pop-system-updater = { path = "../daemon" }
 postage = "0.4.1"
 ron = "0.7.0"
 rust-embed = "6.3.0"
-smol = "1.2.5"
 tracing = "0.1.33"
 tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 zbus = "2.1.1"

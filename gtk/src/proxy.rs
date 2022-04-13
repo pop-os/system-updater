@@ -17,7 +17,7 @@ pub enum ProxyEvent {
 pub fn initialize_service() -> Sender<ProxyEvent> {
     let (tx, mut rx) = channel(1);
 
-    let background_process = smol::spawn(async move {
+    let background_process = async move {
         let connection = match Connection::system().await {
             Ok(connection) => connection,
             Err(why) => {
@@ -76,8 +76,16 @@ pub fn initialize_service() -> Sender<ProxyEvent> {
                 }
             }
         }
+    };
+
+    std::thread::spawn(move || {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
+        runtime.block_on(background_process);
     });
 
-    background_process.detach();
     tx
 }
