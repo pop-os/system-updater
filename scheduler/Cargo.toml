@@ -1,0 +1,24 @@
+[package]
+name = "pop-task-scheduler"
+description = "Simple lightweight efficient runtime-agnostic async task scheduler with cron expression support"
+repository = "https://github.com/pop-os/system-updater"
+version = "1.0.0"
+license = "MPL-2.0"
+authors = ["Michael Aaron Murphy <mmstick@pm.me>"]
+categories = [ "asynchronous", "date-and-time" ]
+keywords = ["cron", "job", "scheduler", "tokio", "smol"]
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.19"
+flume = "0.10.12"
+slotmap = "1.0.6"
+futures = "0.3.21"
+
+[dependencies.cron]
+git = "https://github.com/mmstick/cron"
+branch = "iterator"
+
+
+[dev-dependencies]
+smol = "1.2.5"
