@@ -34,8 +34,12 @@ distclean:
     rm -rf .cargo vendor vendor.tar target
 
 # Run the GTK UI for testing purposes.
-gtk_test:
-    cargo run -p pop-system-updater-gtk {{cargo_args}}
+run:
+    cargo run -p pop-system-updater-gtk
+
+# Run the systemd service for testing.
+run_service:
+    just && sudo env RUST_BACKTRACE=1 RUST_LOG=debug ./target/release/pop-system-updater
 
 # Install the compiled project into the system.
 install:
