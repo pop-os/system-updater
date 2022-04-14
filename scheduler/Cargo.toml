@@ -16,8 +16,7 @@ slotmap = "1.0.6"
 futures = "0.3.21"
 
 [dependencies.cron]
-git = "https://github.com/mmstick/cron"
-branch = "iterator"
+git = "https://github.com/zslayton/cron"
 
 
 [dev-dependencies]

@@ -11,7 +11,7 @@ pub struct JobId(pub slotmap::DefaultKey);
 
 /// Contains scheduling information for a job at a given timezone.
 pub struct Job<Tz: TimeZoneExt> {
-    pub(crate) iterator: cron::ScheduleIteratorBuf<Tz>,
+    pub(crate) iterator: cron::OwnedScheduleIterator<Tz>,
     pub(crate) next: DateTime<Tz>,
 }
 
@@ -23,7 +23,7 @@ impl<Tz: TimeZoneExt> Job<Tz> {
 
     /// Creates a job from a pre-generated cron schedule.
     pub fn cron_schedule(schedule: cron::Schedule) -> Self {
-        let mut iterator = schedule.upcoming_buf(Tz::timescale());
+        let mut iterator = schedule.upcoming_owned(Tz::timescale());
         let next = iterator.next().unwrap();
         Job { iterator, next }
     }
