@@ -1,5 +1,5 @@
 [package]
-name = "pop-task-scheduler"
+name = "async-cron-scheduler"
 description = "Simple lightweight efficient runtime-agnostic async task scheduler with cron expression support"
 repository = "https://github.com/pop-os/system-updater"
 version = "1.0.0"
@@ -11,13 +11,10 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.19"
+cron = "0.11.0"
 flume = "0.10.12"
 slotmap = "1.0.6"
 futures = "0.3.21"
-
-[dependencies.cron]
-git = "https://github.com/zslayton/cron"
-
 
 [dev-dependencies]
 smol = "1.2.5"

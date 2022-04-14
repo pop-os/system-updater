@@ -1,4 +1,4 @@
-# pop-task-scheduler
+# async-cron-scheduler
 
 Simple lightweight efficient runtime-agnostic async task scheduler with cron expression support
 

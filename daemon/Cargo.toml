@@ -31,7 +31,7 @@ whitespace-conf = "1.0.0"
 zbus = "2.1.1"
 zvariant = { version = "3.1.2", features = ["enumflags2"] }
 chrono = "0.4.19"
-pop-task-scheduler = { path = "../scheduler" }
+async-cron-scheduler = { path = "../scheduler" }
 
 [dependencies.tokio]
 version = "1.17.0"

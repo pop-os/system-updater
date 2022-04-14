@@ -1,6 +1,7 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
+use async_cron_scheduler::*;
 use chrono::Local;
 use config::{Interval, Schedule};
 use flume::Sender;
@@ -10,7 +11,6 @@ use pop_system_updater::dbus::{
     server::{self, Server},
     Event, IFACE,
 };
-use pop_task_scheduler::*;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;

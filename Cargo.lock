@@ -107,6 +107,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-cron-scheduler"
+version = "1.0.0"
+dependencies = [
+ "chrono",
+ "cron",
+ "flume",
+ "futures",
+ "slotmap",
+ "smol",
+]
+
+[[package]]
 name = "async-executor"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -523,8 +535,9 @@ dependencies = [
 
 [[package]]
 name = "cron"
-version = "0.10.1"
-source = "git+https://github.com/zslayton/cron#86f7f3ec3a639b62bf076839de8cca71dd201fd2"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d76219e9243e100d5a37676005f08379297f8addfebc247613299600625c734d"
 dependencies = [
  "chrono",
  "nom",
@@ -1941,6 +1954,7 @@ dependencies = [
  "anyhow",
  "apt-cmd",
  "as-result",
+ "async-cron-scheduler",
  "async-stream",
  "better-panic",
  "bytesize",
@@ -1953,7 +1967,6 @@ dependencies = [
  "libc",
  "notify-rust",
  "os-release",
- "pop-task-scheduler",
  "ron",
  "serde",
  "serde_repr",
@@ -1988,18 +2001,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "zbus",
-]
-
-[[package]]
-name = "pop-task-scheduler"
-version = "1.0.0"
-dependencies = [
- "chrono",
- "cron",
- "flume",
- "futures",
- "slotmap",
- "smol",
 ]
 
 [[package]]
