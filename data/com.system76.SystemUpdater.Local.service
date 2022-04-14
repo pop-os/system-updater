@@ -1,6 +1,7 @@
 [Unit]
 Description=Local session service for the Pop System Updater
-Wants=network.target
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=dbus

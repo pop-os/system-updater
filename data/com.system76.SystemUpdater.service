@@ -1,5 +1,6 @@
 [Unit]
-Requires=network.target
+Wants=network-online.target
+After=network-online.target
 Description=Distribution updater
 
 [Service]
@@ -11,4 +12,4 @@ KillMode=process
 SendSIGKILL=no
 
 [Install]
-WantedBy=network.target
+WantedBy=default.target
