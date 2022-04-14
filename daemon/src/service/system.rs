@@ -3,13 +3,13 @@
 
 use chrono::Local;
 use config::{Interval, Schedule};
+use flume::Sender;
 use pop_system_updater::config;
 use pop_system_updater::dbus::PopService;
 use pop_system_updater::dbus::{
     server::{self, Server},
     Event, IFACE,
 };
-use flume::Sender;
 use pop_task_scheduler::*;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -137,7 +137,8 @@ pub async fn run() {
         {
             let sender = sender.clone();
             async move {
-                let mut interval = tokio::time::interval(std::time::Duration::from_secs(60 * 60 * 12));
+                let mut interval =
+                    tokio::time::interval(std::time::Duration::from_secs(60 * 60 * 12));
                 loop {
                     interval.tick().await;
                     let _ = sender.send(Event::Update);
@@ -252,7 +253,11 @@ async fn restart_session_services() {
         .await;
 }
 
-fn schedule_job(scheduler: &mut Scheduler<Local>, schedule: &Schedule, sender: &Sender<Event>) -> JobId {
+fn schedule_job(
+    scheduler: &mut Scheduler<Local>,
+    schedule: &Schedule,
+    sender: &Sender<Event>,
+) -> JobId {
     info!("scheduling for {:?}", schedule);
     let sender = sender.clone();
     scheduler.insert(Job::cron(&*cron_expression(schedule)).unwrap(), move |_| {

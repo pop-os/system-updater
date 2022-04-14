@@ -16,6 +16,8 @@ fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
+    localize();
+
     glib::set_program_name(APP_ID.into());
 
     let application = Application::new(Some(APP_ID), ApplicationFlags::empty());
@@ -53,4 +55,16 @@ fn main() {
     });
 
     application.run();
+}
+
+pub fn localize() {
+    let localizer = pop_system_updater_gtk::localize::localizer();
+    let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
+
+    if let Err(error) = localizer.select(&requested_languages) {
+        eprintln!(
+            "Error while loading language for pop-desktop-widget {}",
+            error
+        );
+    }
 }

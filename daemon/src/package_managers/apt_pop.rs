@@ -1,4 +1,4 @@
-use tokio::fs as fs;
+use tokio::fs;
 
 const SOURCES_LIST: &str = "/etc/apt/sources.list";
 const SYSTEM_SOURCES: &str = "/etc/apt/sources.list.d/system.sources";

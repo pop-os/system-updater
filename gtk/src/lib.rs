@@ -6,7 +6,7 @@ extern crate cascade;
 
 pub(crate) mod bsb;
 pub(crate) mod dialog;
-mod localize;
+pub mod localize;
 pub(crate) mod proxy;
 pub(crate) mod utils;
 mod widget;

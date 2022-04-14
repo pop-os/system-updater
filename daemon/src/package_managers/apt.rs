@@ -7,15 +7,15 @@ use apt_cmd::fetch::{FetchEvents, PackageFetcher};
 use apt_cmd::lock::apt_lock_wait;
 use apt_cmd::request::Request as AptRequest;
 use apt_cmd::{AptGet, AptMark, Dpkg};
-use tokio::process::{Child, Command};
-use std::process::Stdio;
 use futures::Stream;
 use futures::StreamExt;
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::Path;
 use std::pin::Pin;
+use std::process::Stdio;
 use std::sync::Arc;
+use tokio::process::{Child, Command};
 
 pub async fn update(conn: zbus::Connection) -> bool {
     const SOURCE: &str = "apt";
