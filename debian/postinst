@@ -8,10 +8,6 @@ if systemctl is-active "${SERVICE}"; then
     systemctl restart "${SERVICE}"
 fi
 
-if systemctl --user is-active "${SESSION}"; then
-    systemctl --user restart "${SESSION}"
-fi
-
 systemctl enable --now "${SERVICE}"
 systemctl --global enable "${SESSION}"
 
