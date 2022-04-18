@@ -1,8 +1,19 @@
 #!/bin/sh
 set -x
 
-systemctl enable --now com.system76.SystemUpdater
-systemctl --global enable com.system76.SystemUpdater.Local
+SERVICE="com.system76.SystemUpdater"
+SESSION="${SERVICE}.Local"
+
+if systemctl is-active "${SERVICE}"; then
+    systemctl restart "${SERVICE}"
+fi
+
+if systemctl --user is-active "${SESSION}"; then
+    systemctl --user restart "${SESSION}"
+fi
+
+systemctl enable --now "${SERVICE}"
+systemctl --global enable "${SESSION}"
 
 #DEBHELPER#
 
