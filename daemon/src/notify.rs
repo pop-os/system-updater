@@ -1,6 +1,8 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
+const APPCENTER: &str = "io.elementary.appcenter";
+
 use notify_rust::{Notification, Timeout};
 
 pub fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
@@ -27,7 +29,7 @@ pub async fn updates_available() {
         "Click here to update the system",
         || {
             tokio::spawn(async move {
-                let _ = tokio::process::Command::new("io.elementary.appcenter")
+                let _ = tokio::process::Command::new(APPCENTER)
                     .arg("-u")
                     .status()
                     .await;
@@ -39,15 +41,14 @@ pub async fn updates_available() {
 /// Restart the appcenter to force that the packagekit cache is refreshed.
 async fn restart_appcenter() {
     let _ = tokio::process::Command::new("killall")
-        .arg("io.elementary.appcenter")
+        .arg(APPCENTER)
         .status()
         .await;
 
-    if let Ok(fork::Fork::Child) = fork::daemon(false, false) {
-        let _ = std::process::Command::new("io.elementary.appcenter")
+    tokio::spawn(async move {
+        tokio::process::Command::new(APPCENTER)
             .arg("-s")
-            .status();
-
-        std::process::exit(0);
-    }
+            .status()
+            .await
+    });
 }
