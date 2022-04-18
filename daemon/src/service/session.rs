@@ -3,12 +3,14 @@
 
 use anyhow::Context;
 use config::{Frequency, LocalCache, LocalConfig};
+use flume::Sender;
 use pop_system_updater::config;
 use pop_system_updater::dbus::PopService;
 use pop_system_updater::dbus::{
     client::ClientProxy, local_server::LocalServer, LocalEvent, IFACE_LOCAL,
 };
 use std::time::{Duration, SystemTime};
+use tokio::task::JoinHandle;
 use zbus::Connection;
 
 pub async fn run() -> anyhow::Result<()> {
@@ -46,33 +48,61 @@ pub async fn run() -> anyhow::Result<()> {
         .await
         .expect("failed to request session name");
 
-    let cache = &mut config::load_session_cache().await;
+    let mut state = State {
+        cache: config::load_session_cache().await,
+        schedule_handle: tokio::spawn(update_on(
+            sender.clone(),
+            Duration::from_secs(SECONDS_IN_DAY),
+        )),
+        sender,
+    };
 
-    const SECONDS_IN_DAY: u64 = 60 * 60 * 24;
+    state.check_for_updates(&config).await;
 
-    fn last_update_time_exceeded(config: &LocalConfig, cache: &LocalCache, now: u64) -> bool {
-        if cache.last_update > now {
-            return true;
-        }
-
-        match config.notification_frequency {
-            Frequency::Daily => cache.last_update + SECONDS_IN_DAY <= now,
-            Frequency::Weekly => cache.last_update + SECONDS_IN_DAY * 7 <= now,
-            Frequency::Monthly => cache.last_update + SECONDS_IN_DAY * 30 <= now,
+    while let Ok(event) = receiver.recv_async().await {
+        match event {
+            LocalEvent::CheckUpdates => state.check_for_updates(&config).await,
+            LocalEvent::UpdateConfig(conf) => {
+                config = conf;
+                state.check_for_updates(&config).await;
+            }
         }
     }
 
-    async fn check_for_updates(config: &LocalConfig, cache: &mut LocalCache) {
+    Ok(())
+}
+
+pub struct State {
+    cache: LocalCache,
+    schedule_handle: JoinHandle<()>,
+    sender: Sender<LocalEvent>,
+}
+
+impl State {
+    async fn check_for_updates(&mut self, config: &LocalConfig) {
         let now = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs());
 
-        if !last_update_time_exceeded(config, cache, now) {
+        let next_update = next_update(config, &self.cache);
+
+        self.schedule_handle.abort();
+
+        if next_update > now {
+            let next = next_update - now;
+            info!("next update in {} seconds", next);
+            let future = update_on(self.sender.clone(), Duration::from_secs(next));
+            self.schedule_handle = tokio::spawn(future);
             return;
         }
 
-        cache.last_update = now;
-        let f1 = config::write_session_cache(cache);
+        self.schedule_handle = tokio::spawn(update_on(
+            self.sender.clone(),
+            Duration::from_secs(SECONDS_IN_DAY),
+        ));
+
+        self.cache.last_update = now;
+        let f1 = config::write_session_cache(&self.cache);
         let f2 = async {
             if crate::package_managers::updates_are_available().await {
                 info!("displaying notification of available updates");
@@ -82,30 +112,19 @@ pub async fn run() -> anyhow::Result<()> {
 
         futures::join!(f1, f2);
     }
+}
 
-    check_for_updates(&config, cache).await;
+const SECONDS_IN_DAY: u64 = 60 * 60 * 24;
 
-    let scheduler = async move {
-        loop {
-            let _ = sender.send(LocalEvent::CheckUpdates);
-            tokio::time::sleep(Duration::from_secs(SECONDS_IN_DAY)).await;
-        }
-    };
+fn next_update(config: &LocalConfig, cache: &LocalCache) -> u64 {
+    match config.notification_frequency {
+        Frequency::Daily => cache.last_update + SECONDS_IN_DAY,
+        Frequency::Weekly => cache.last_update + SECONDS_IN_DAY * 7,
+        Frequency::Monthly => cache.last_update + SECONDS_IN_DAY * 30,
+    }
+}
 
-    let event_loop = async move {
-        while let Ok(event) = receiver.recv_async().await {
-            debug!("{:?}", event);
-            match event {
-                LocalEvent::CheckUpdates => check_for_updates(&config, cache).await,
-                LocalEvent::UpdateConfig(conf) => {
-                    config = conf;
-                    check_for_updates(&config, cache).await;
-                }
-            }
-        }
-    };
-
-    futures::join!(scheduler, event_loop);
-
-    Ok(())
+async fn update_on(sender: Sender<LocalEvent>, duration: Duration) {
+    tokio::time::sleep(duration).await;
+    let _ = sender.send(LocalEvent::CheckUpdates);
 }
