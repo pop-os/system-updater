@@ -18,29 +18,43 @@ use std::time::Duration;
 use tokio::task::JoinHandle;
 use zbus::Connection;
 
-#[derive(Default)]
 pub struct Service {
     updating: Arc<AtomicBool>,
+    update_task: Option<JoinHandle<()>>,
+    update_job: Option<JobId>,
+    when_available_queue: Option<JoinHandle<()>>,
+    scheduler: Scheduler<Local>,
 }
 
 impl Service {
-    async fn auto_update(&self, connection: &zbus::Connection) {
+    async fn auto_update(&mut self, connection: &zbus::Connection, sender: Sender<Event>) {
         info!("system update initiated");
         self.updating.store(true, Ordering::SeqCst);
 
-        let _ = futures::join!(
-            crate::package_managers::apt::update(connection.clone()),
-            crate::package_managers::flatpak::update(connection.clone()),
-            crate::package_managers::fwupd::update(connection.clone()),
-            crate::package_managers::nix::update(connection),
-            crate::package_managers::snap::update(connection.clone())
-        );
+        let connection = connection.clone();
+        let updating = self.updating.clone();
 
-        self.updating.store(false, Ordering::SeqCst);
-        info!("system update complete");
+        self.update_task = Some(tokio::task::spawn_local(async move {
+            let _ = futures::join!(
+                crate::package_managers::apt::update(connection.clone()),
+                crate::package_managers::flatpak::update(connection.clone()),
+                crate::package_managers::fwupd::update(connection.clone()),
+                crate::package_managers::nix::update(&connection),
+                crate::package_managers::snap::update(connection.clone())
+            );
+
+            updating.store(false, Ordering::SeqCst);
+            let _ = sender.send_async(Event::UpdateComplete).await;
+            info!("system update complete");
+        }));
     }
 
     async fn check_for_updates(&self) {
+        if self.update_task.is_some() {
+            info!("already performing an update");
+            return;
+        }
+
         info!("checking for system updates");
         let _ = apt_cmd::lock::apt_lock_wait().await;
         let _ = crate::package_managers::apt::update_package_lists().await;
@@ -48,6 +62,11 @@ impl Service {
     }
 
     async fn repair(&self, connection: &zbus::Connection) {
+        if self.update_task.is_some() {
+            info!("already performing an update");
+            return;
+        }
+
         info!("performing a system repair");
 
         let result = crate::package_managers::apt::repair().await;
@@ -64,23 +83,6 @@ impl Service {
         info!("system repair attempt complete");
     }
 
-    async fn update_notification(&self, connection: &zbus::Connection) {
-        let response = |ctx| async move {
-            Server::updates_available(&ctx, crate::package_managers::updates_are_available().await)
-                .await
-        };
-
-        server::context(connection, response).await;
-    }
-}
-
-pub struct State {
-    update_job: Option<JobId>,
-    when_available_queue: Option<JoinHandle<()>>,
-    scheduler: Scheduler<Local>,
-}
-
-impl State {
     fn schedule_when_available(&mut self, sender: &Sender<Event>) {
         if let Some(id) = self.update_job.take() {
             self.scheduler.remove(id);
@@ -91,6 +93,15 @@ impl State {
         }
 
         self.update_job = Some(auto_job(&mut self.scheduler, sender));
+    }
+
+    async fn update_notification(&self, connection: &zbus::Connection) {
+        let response = |ctx| async move {
+            Server::updates_available(&ctx, crate::package_managers::updates_are_available().await)
+                .await
+        };
+
+        server::context(connection, response).await;
     }
 
     fn update_scheduler(&mut self, config: &Config, sender: &Sender<Event>) {
@@ -121,7 +132,7 @@ pub async fn run() {
 
     let (sender, receiver) = flume::bounded(1);
 
-    let service = Service::default();
+    let updating = Arc::new(AtomicBool::new(false));
 
     let connection = Connection::system()
         .await
@@ -132,7 +143,7 @@ pub async fn run() {
         .at(
             IFACE,
             Server {
-                updating: service.updating.clone(),
+                updating: updating.clone(),
                 service: PopService {
                     sender: sender.clone(),
                 },
@@ -152,13 +163,15 @@ pub async fn run() {
 
     let (scheduler, scheduler_service) = Scheduler::<Local>::launch(tokio::time::sleep);
 
-    let mut state = State {
+    let mut service = Service {
+        updating,
         update_job: None,
+        update_task: None,
         when_available_queue: None,
         scheduler,
     };
 
-    state.update_scheduler(&config, &sender);
+    service.update_scheduler(&config, &sender);
 
     let sig_duration = std::time::Duration::from_secs(1);
 
@@ -203,16 +216,18 @@ pub async fn run() {
 
                     Event::Repair => service.repair(&connection).await,
 
-                    Event::ScheduleWhenAvailable => state.schedule_when_available(&sender),
+                    Event::ScheduleWhenAvailable => service.schedule_when_available(&sender),
 
-                    Event::Update => service.auto_update(&connection).await,
+                    Event::Update => service.auto_update(&connection, sender.clone()).await,
+
+                    Event::UpdateComplete => service.update_task = None,
 
                     Event::SetAutoUpdate(enable) => {
                         info!("setting auto-update mode to {}", enable);
 
                         config.auto_update = enable;
 
-                        state.update_scheduler(&config, &sender);
+                        service.update_scheduler(&config, &sender);
 
                         let config = config.clone();
                         tokio::spawn(async move {
@@ -226,7 +241,7 @@ pub async fn run() {
 
                         config.schedule = schedule;
 
-                        state.update_scheduler(&config, &sender);
+                        service.update_scheduler(&config, &sender);
 
                         let config = config.clone();
                         tokio::spawn(async move {

@@ -220,7 +220,7 @@ fn hold_apt_locks() -> anyhow::Result<(File, File)> {
     Ok((lists, dpkg))
 }
 
-pub type Packages = Pin<Box<dyn Stream<Item = String>>>;
+pub type Packages = Pin<Box<dyn Stream<Item = String> + Send>>;
 
 // Fetch all upgradeable debian packages from system apt repositories.
 pub async fn upgradable_packages() -> anyhow::Result<(Child, Packages)> {

@@ -29,10 +29,15 @@ async fn main() {
     better_panic::install();
 
     // If root then system service, else local session service.
-    let effective_uid = users::get_effective_uid();
-    if effective_uid == 0 {
-        crate::service::system::run().await;
-    } else if accounts::is_desktop_account(effective_uid) {
-        let _ = crate::service::session::run().await;
-    }
+    let main_future = async move {
+        let effective_uid = users::get_effective_uid();
+        if effective_uid == 0 {
+            crate::service::system::run().await;
+        } else if accounts::is_desktop_account(effective_uid) {
+            let _ = crate::service::session::run().await;
+        }
+    };
+
+    // Run inside this to allow spawning tasks locally.
+    tokio::task::LocalSet::new().run_until(main_future).await
 }

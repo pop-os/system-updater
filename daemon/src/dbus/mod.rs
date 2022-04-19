@@ -21,6 +21,7 @@ pub enum Event {
     SetSchedule(Option<Schedule>),
     SetAutoUpdate(bool),
     Update,
+    UpdateComplete,
 }
 
 #[derive(Debug)]
