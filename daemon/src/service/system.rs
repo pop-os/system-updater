@@ -14,6 +14,8 @@ use pop_system_updater::dbus::{
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
+use tokio::task::JoinHandle;
 use zbus::Connection;
 
 #[derive(Default)]
@@ -72,6 +74,46 @@ impl Service {
     }
 }
 
+pub struct State {
+    update_job: Option<JobId>,
+    when_available_queue: Option<JoinHandle<()>>,
+    scheduler: Scheduler<Local>,
+}
+
+impl State {
+    fn schedule_when_available(&mut self, sender: &Sender<Event>) {
+        if let Some(id) = self.update_job.take() {
+            self.scheduler.remove(id);
+        }
+
+        if let Some(task) = self.when_available_queue.take() {
+            task.abort();
+        }
+
+        self.update_job = Some(auto_job(&mut self.scheduler, sender));
+    }
+
+    fn update_scheduler(&mut self, config: &Config, sender: &Sender<Event>) {
+        if let Some(id) = self.update_job.take() {
+            self.scheduler.remove(id);
+        }
+
+        if let Some(task) = self.when_available_queue.take() {
+            task.abort();
+        }
+
+        if let Some(ref conf) = config.schedule {
+            self.update_job = Some(schedule_job(&mut self.scheduler, conf, sender));
+        } else if config.auto_update {
+            let sender = sender.clone();
+            self.when_available_queue = Some(tokio::task::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+                let _ = sender.send_async(Event::ScheduleWhenAvailable).await;
+            }));
+        }
+    }
+}
+
 pub async fn run() {
     info!("initiating system service");
     crate::signal_handler::init();
@@ -107,23 +149,15 @@ pub async fn run() {
 
     let mut config = config::load_system_config().await;
 
-    let (mut scheduler, scheduler_service) = Scheduler::<Local>::launch(tokio::time::sleep);
+    let (scheduler, scheduler_service) = Scheduler::<Local>::launch(tokio::time::sleep);
 
-    let mut update_job: Option<JobId> = None;
-
-    let mut update_scheduler = |config: &Config| {
-        if let Some(id) = update_job.take() {
-            scheduler.remove(id);
-        }
-
-        if let Some(ref conf) = config.schedule {
-            update_job = Some(schedule_job(&mut scheduler, conf, &sender));
-        } else if config.auto_update {
-            update_job = Some(auto_job(&mut scheduler, &sender));
-        }
+    let mut state = State {
+        update_job: None,
+        when_available_queue: None,
+        scheduler,
     };
 
-    update_scheduler(&config);
+    state.update_scheduler(&config, &sender);
 
     let sig_duration = std::time::Duration::from_secs(1);
 
@@ -168,6 +202,8 @@ pub async fn run() {
 
                     Event::Repair => service.repair(&connection).await,
 
+                    Event::ScheduleWhenAvailable => state.schedule_when_available(&sender),
+
                     Event::Update => service.auto_update(&connection).await,
 
                     Event::SetAutoUpdate(enable) => {
@@ -175,7 +211,7 @@ pub async fn run() {
 
                         config.auto_update = enable;
 
-                        update_scheduler(&config);
+                        state.update_scheduler(&config, &sender);
 
                         let config = config.clone();
                         tokio::spawn(async move {
@@ -189,7 +225,7 @@ pub async fn run() {
 
                         config.schedule = schedule;
 
-                        update_scheduler(&config);
+                        state.update_scheduler(&config, &sender);
 
                         let config = config.clone();
                         tokio::spawn(async move {

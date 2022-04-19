@@ -17,9 +17,10 @@ pub enum Event {
     CheckForUpdates,
     Exit,
     Repair,
-    Update,
+    ScheduleWhenAvailable,
     SetSchedule(Option<Schedule>),
     SetAutoUpdate(bool),
+    Update,
 }
 
 #[derive(Debug)]
