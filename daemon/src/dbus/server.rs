@@ -19,12 +19,12 @@ pub struct Server {
 #[dbus_interface(name = "com.system76.SystemUpdater")]
 impl Server {
     async fn auto_update_set(&mut self, enable: bool) -> zbus::fdo::Result<()> {
-        self.service.send(Event::SetAutoUpdate(enable))
+        self.service.send(Event::SetAutoUpdate(enable)).await
     }
 
     /// Check if any updates are available to install.
     async fn check_for_updates(&mut self) -> zbus::fdo::Result<()> {
-        self.service.send(Event::CheckForUpdates)
+        self.service.send(Event::CheckForUpdates).await
     }
 
     /// Check if a system update is currently being performed.
@@ -33,21 +33,21 @@ impl Server {
     }
 
     async fn repair(&mut self) -> zbus::fdo::Result<()> {
-        self.service.send(Event::Repair)
+        self.service.send(Event::Repair).await
     }
 
     async fn update_scheduling_disable(&mut self) -> zbus::fdo::Result<()> {
-        self.service.send(Event::SetSchedule(None))
+        self.service.send(Event::SetSchedule(None)).await
     }
 
     async fn update_scheduling_set(&mut self, schedule: Schedule) -> zbus::fdo::Result<()> {
-        self.service.send(Event::SetSchedule(Some(schedule)))
+        self.service.send(Event::SetSchedule(Some(schedule))).await
     }
 
     /// Initiates a system update.
     async fn update_system(&mut self) -> zbus::fdo::Result<()> {
         if !self.updating.load(Ordering::SeqCst) {
-            self.service.send(Event::Update)?;
+            self.service.send(Event::Update).await?;
         }
 
         Ok(())

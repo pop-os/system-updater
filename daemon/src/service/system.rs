@@ -136,7 +136,7 @@ pub async fn run() {
                     tokio::time::sleep(sig_duration).await;
                     if crate::signal_handler::status().is_some() {
                         info!("Found interrupt");
-                        let _ = sender.send(Event::Exit);
+                        let _ = sender.send_async(Event::Exit).await;
                         break;
                     }
                 }
@@ -151,7 +151,7 @@ pub async fn run() {
                     tokio::time::interval(std::time::Duration::from_secs(60 * 60 * 12));
                 loop {
                     interval.tick().await;
-                    let _ = sender.send(Event::Update);
+                    let _ = sender.send_async(Event::Update).await;
                 }
             }
         },
@@ -240,11 +240,20 @@ async fn restart_session_services() {
 
 fn auto_job(scheduler: &mut Scheduler<Local>, sender: &Sender<Event>) -> JobId {
     info!("scheduling every 12 hours, in addition to now");
-    let _ = sender.send(Event::Update);
+
+    tokio::spawn({
+        let sender = sender.clone();
+        async move {
+            let _ = sender.send_async(Event::Update).await;
+        }
+    });
 
     let sender = sender.clone();
     scheduler.insert(Job::cron("0 0 */12 * * *").unwrap(), move |_| {
-        let _ = sender.send(Event::Update);
+        let sender = sender.clone();
+        tokio::spawn(async move {
+            let _ = sender.send_async(Event::Update).await;
+        });
     })
 }
 
@@ -256,7 +265,10 @@ fn schedule_job(
     info!("scheduling for {:?}", schedule);
     let sender = sender.clone();
     scheduler.insert(Job::cron(&*cron_expression(schedule)).unwrap(), move |_| {
-        let _ = sender.send(Event::Update);
+        let sender = sender.clone();
+        tokio::spawn(async move {
+            let _ = sender.send_async(Event::Update).await;
+        });
     })
 }
 

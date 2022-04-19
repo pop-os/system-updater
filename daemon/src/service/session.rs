@@ -126,5 +126,5 @@ fn next_update(config: &LocalConfig, cache: &LocalCache) -> u64 {
 
 async fn update_on(sender: Sender<LocalEvent>, duration: Duration) {
     tokio::time::sleep(duration).await;
-    let _ = sender.send(LocalEvent::CheckUpdates);
+    let _ = sender.send_async(LocalEvent::CheckUpdates).await;
 }

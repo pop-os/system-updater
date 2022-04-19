@@ -26,7 +26,7 @@ impl LocalServer {
         self.config.notification_frequency = frequency;
 
         crate::config::write_session_config(&self.config).await;
-        let _ = self.service.send(LocalEvent::UpdateConfig(self.config.clone()));
+        let _ = self.service.send(LocalEvent::UpdateConfig(self.config.clone())).await;
 
         Ok(())
     }

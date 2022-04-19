@@ -33,8 +33,8 @@ pub struct PopService<E> {
 }
 
 impl<E: std::fmt::Debug> PopService<E> {
-    fn send(&mut self, event: E) -> zbus::fdo::Result<()> {
-        if let Err(why) = self.sender.send(event) {
+    async fn send(&mut self, event: E) -> zbus::fdo::Result<()> {
+        if let Err(why) = self.sender.send_async(event).await {
             Err(zbus::fdo::Error::Failed(format!("{}", why)))
         } else {
             Ok(())
