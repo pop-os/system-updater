@@ -45,6 +45,7 @@ impl SettingsWidget {
         let automatic_updates;
         let schedule_label;
         let schedule_description;
+        let notification_label;
         let notification_schedule;
 
         let content = cascade! {
@@ -104,7 +105,7 @@ impl SettingsWidget {
                 }
             });
             ..add(&{
-                let label = gtk::Label::builder()
+                notification_label = gtk::Label::builder()
                     .label(&fl!("update-notifications-label"))
                     .xalign(0.0)
                     .hexpand(true)
@@ -120,7 +121,7 @@ impl SettingsWidget {
 
                 cascade! {
                     option_container();
-                    ..add(&label);
+                    ..add(&notification_label);
                     ..add(&notification_schedule);
                     ..show_all();
                 }
@@ -208,13 +209,18 @@ impl SettingsWidget {
             let change_scheduling_sensitivity = |config: &Config| {
                 let label_ctx = schedule_label.style_context();
                 let description_ctx = schedule_description.style_context();
+                let nlabel_ctx = notification_label.style_context();
 
                 if config.auto_update {
                     label_ctx.remove_class("dim-label");
                     description_ctx.remove_class("dim-label");
+                    nlabel_ctx.add_class("dim-label");
+                    notification_schedule.set_sensitive(false);
                 } else {
                     label_ctx.add_class("dim-label");
                     description_ctx.add_class("dim-label");
+                    nlabel_ctx.remove_class("dim-label");
+                    notification_schedule.set_sensitive(true);
                 }
 
                 dialog_active.set(config.auto_update);
