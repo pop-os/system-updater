@@ -15,6 +15,10 @@ cron = "0.11.0"
 flume = "0.10.12"
 slotmap = "1.0.6"
 futures = "0.3.21"
+tracing = { version = "0.1.34", optional = true }
+
+[features]
+logging = ["tracing"]
 
 [dev-dependencies]
 smol = "1.2.5"

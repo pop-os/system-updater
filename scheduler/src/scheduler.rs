@@ -193,6 +193,9 @@ impl<Tz: TimeZoneExt> SchedulerModel<Tz> {
                 let seconds_until = date.signed_duration_since(Tz::now()).num_seconds();
                 if let Ok(seconds_until) = u64::try_from(seconds_until) {
                     if seconds_until > 0 {
+                        #[cfg(feature = "logging")]
+                        tracing::info!("next job in {} seconds", seconds_until);
+
                         let duration = Duration::from_secs(seconds_until as u64);
                         self.next = Some((id, duration));
                         return;
