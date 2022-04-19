@@ -4,6 +4,8 @@ set -x
 SERVICE="com.system76.SystemUpdater"
 SESSION="${SERVICE}.Local"
 
+systemctl daemon-reload
+
 if systemctl is-active "${SERVICE}"; then
     systemctl restart "${SERVICE}"
 fi
