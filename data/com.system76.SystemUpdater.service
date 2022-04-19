@@ -1,6 +1,7 @@
 [Unit]
 After=network-online.target
 Description=Distribution updater
+DefaultDependencies=no
 
 [Service]
 Type=dbus
