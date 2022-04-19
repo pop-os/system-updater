@@ -3,7 +3,7 @@
 
 use crate::utils;
 use anyhow::Context;
-use apt_cmd::fetch::{FetchEvents, PackageFetcher};
+use apt_cmd::fetch::{FetchEvent, FetcherExt};
 use apt_cmd::lock::apt_lock_wait;
 use apt_cmd::request::Request as AptRequest;
 use apt_cmd::{AptGet, AptMark, Dpkg};
@@ -15,7 +15,9 @@ use std::path::Path;
 use std::pin::Pin;
 use std::process::Stdio;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::process::{Child, Command};
+use tokio::sync::mpsc::UnboundedReceiver;
 
 pub async fn update(conn: zbus::Connection) -> bool {
     const SOURCE: &str = "apt";
@@ -88,7 +90,7 @@ async fn system_update(service_requires_update: &mut bool) -> anyhow::Result<()>
     info!("fetching packages");
     let mut events = fetch(&packages).await.context("could not fetch packages")?;
 
-    while let Some(_event) = events.next().await {}
+    while let Some(_event) = events.recv().await {}
 
     if let Some(id) = packages.iter().position(|&p| p == "pop-system-updater") {
         info!("service requires update");
@@ -167,7 +169,7 @@ pub async fn upgrade() -> anyhow::Result<()> {
 }
 
 /// Get a list of APT URIs to fetch for this operation, and then fetch them.
-async fn fetch(packages: &[&str]) -> anyhow::Result<FetchEvents> {
+async fn fetch(packages: &[&str]) -> anyhow::Result<UnboundedReceiver<FetchEvent>> {
     let uris = uris(packages)
         .await
         .context("failed to get URIs for apt packages")?;
@@ -176,24 +178,31 @@ async fn fetch(packages: &[&str]) -> anyhow::Result<FetchEvents> {
     let _lock_files = hold_apt_locks()?;
 
     const ARCHIVES: &str = "/var/cache/apt/archives/";
-    const PARTIAL: &str = "/var/cache/apt/archives/partial/";
 
     const CONCURRENT_FETCHES: usize = 4;
     const DELAY_BETWEEN: u64 = 100;
-    const RETRIES: u32 = 3;
+    const RETRIES: u16 = 3;
 
-    let client = isahc::HttpClient::new().expect("failed to create HTTP Client");
+    let client = reqwest::Client::builder()
+        .pool_idle_timeout(std::time::Duration::from_secs(20))
+        .pool_max_idle_per_host(0)
+        .build()
+        .unwrap();
 
     // The system which fetches packages we send requests to
-    let events = PackageFetcher::new(client)
-        .concurrent(CONCURRENT_FETCHES)
-        .delay_between(DELAY_BETWEEN)
+    let (fetcher, events) = async_fetcher::Fetcher::new(client)
+        .connections_per_file(1)
+        .delay_between_requests(DELAY_BETWEEN)
+        .timeout(Duration::from_secs(10))
         .retries(RETRIES)
+        .into_package_fetcher()
+        .concurrent(CONCURRENT_FETCHES)
         .fetch(
             futures::stream::iter(uris.into_iter().map(Arc::new)),
-            Path::new(PARTIAL).into(),
             Path::new(ARCHIVES).into(),
         );
+
+    tokio::spawn(fetcher);
 
     Ok(events)
 }
