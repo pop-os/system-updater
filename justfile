@@ -75,8 +75,7 @@ package_source:
 
 # Used by packaging systems to build a binary package.
 package_build:
-    env CARGO_HOME={{justfile_directory()}}/target/cargo \
-        just debug={{debug}} vendor={{vendor}} sysconfdir='/usr/share'
+    just debug={{debug}} vendor={{vendor}} sysconfdir='/usr/share'
 
 # Extracts vendored dependencies if vendor=1
 _extract_vendor:
