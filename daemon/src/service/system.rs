@@ -28,6 +28,11 @@ pub struct Service {
 
 impl Service {
     async fn auto_update(&mut self, connection: &zbus::Connection, sender: Sender<Event>) {
+        if self.update_task.is_some() {
+            info!("already performing an update");
+            return;
+        }
+
         info!("system update initiated");
         self.updating.store(true, Ordering::SeqCst);
 
