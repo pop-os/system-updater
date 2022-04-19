@@ -3,7 +3,7 @@ use tokio::fs;
 const SOURCES_LIST: &str = "/etc/apt/sources.list";
 const SYSTEM_SOURCES: &str = "/etc/apt/sources.list.d/system.sources";
 const PROPRIETARY_SOURCES: &str = "/etc/apt/sources.list.d/pop-os-apps.sources";
-const RELEASE_SOURCES: &str = "/etc/apt/sources.list.d/pop-os-ppa.sources";
+const RELEASE_SOURCES: &str = "/etc/apt/sources.list.d/pop-os-release.sources";
 
 const SOURCES_LIST_PLACEHOLDER: &str = r#"## This file is deprecated in Pop!_OS.
 ## See `man deb822` and /etc/apt/sources.list.d/system.sources.
