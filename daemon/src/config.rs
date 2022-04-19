@@ -33,8 +33,8 @@ pub struct Config {
 impl Config {
     pub const fn default_schedule() -> Schedule {
         Schedule {
-            interval: Interval::Monday,
-            hour: 1,
+            interval: Interval::Weekdays,
+            hour: 22,
             minute: 0,
         }
     }
