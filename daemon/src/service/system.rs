@@ -107,6 +107,7 @@ impl State {
         } else if config.auto_update {
             let sender = sender.clone();
             self.when_available_queue = Some(tokio::task::spawn(async move {
+                info!("scheduling when available in 60 seconds");
                 tokio::time::sleep(Duration::from_secs(60)).await;
                 let _ = sender.send_async(Event::ScheduleWhenAvailable).await;
             }));
@@ -118,7 +119,7 @@ pub async fn run() {
     info!("initiating system service");
     crate::signal_handler::init();
 
-    let (sender, receiver) = flume::bounded(4);
+    let (sender, receiver) = flume::bounded(1);
 
     let service = Service::default();
 
@@ -275,8 +276,7 @@ async fn restart_session_services() {
 }
 
 fn auto_job(scheduler: &mut Scheduler<Local>, sender: &Sender<Event>) -> JobId {
-    info!("scheduling every 12 hours, in addition to now");
-
+    info!("scheduling every 12 hours");
     tokio::spawn({
         let sender = sender.clone();
         async move {
