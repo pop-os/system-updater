@@ -5,7 +5,7 @@ const APPCENTER: &str = "io.elementary.appcenter";
 
 use std::time::Duration;
 
-use notify_rust::{Hint, Notification, Timeout, Urgency};
+use notify_rust::{Hint, Notification, Urgency};
 
 pub async fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
     let show_notification = || {
@@ -14,8 +14,6 @@ pub async fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
             .summary(summary)
             .body(body)
             .action("default", "default")
-            .timeout(Timeout::Never)
-            .hint(Hint::Resident(true))
             .hint(Hint::Urgency(Urgency::Critical))
             .show()
     };
