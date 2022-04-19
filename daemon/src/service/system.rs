@@ -279,7 +279,7 @@ fn cron_expression(schedule: &Schedule) -> String {
     };
 
     let minute = schedule.minute.min(59);
-    let hour = (schedule.hour + 1).min(24);
+    let hour = schedule.hour.min(23);
 
     format!("0 {minute} {hour} * * {days}")
 }

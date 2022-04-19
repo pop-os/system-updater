@@ -40,3 +40,15 @@ pub fn option_frame(widget: &gtk::Widget) -> gtk::Frame {
 pub fn separator_header(current: &gtk::ListBoxRow, _before: Option<&gtk::ListBoxRow>) {
     current.set_header(Some(&gtk::Separator::new(gtk::Orientation::Horizontal)));
 }
+
+pub fn as_12(hour: u8) -> (u8, bool) {
+    if hour == 0 {
+        (12, false)
+    } else if hour < 12 {
+        (hour, false)
+    } else if hour == 12 {
+        (12, true)
+    } else {
+        (hour - 12, true)
+    }
+}
