@@ -10,3 +10,4 @@ ExecStart=/usr/bin/pop-system-updater
 
 [Install]
 WantedBy=default.target
+Alias=pop-system-updater-local.service

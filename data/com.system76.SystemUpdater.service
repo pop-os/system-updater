@@ -13,3 +13,4 @@ SendSIGKILL=no
 
 [Install]
 WantedBy=default.target
+Alias=pop-system-updater.service
