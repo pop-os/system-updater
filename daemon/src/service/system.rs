@@ -330,18 +330,20 @@ fn schedule_job(
 
 fn cron_expression(schedule: &Schedule) -> String {
     let days: &str = match schedule.interval {
-        Interval::Sunday => "0",
-        Interval::Monday => "1",
-        Interval::Tuesday => "2",
-        Interval::Wednesday => "3",
-        Interval::Thursday => "4",
-        Interval::Friday => "5",
-        Interval::Saturday => "6",
+        Interval::Sunday => "SUN",
+        Interval::Monday => "MON",
+        Interval::Tuesday => "TUE",
+        Interval::Wednesday => "WED",
+        Interval::Thursday => "THU",
+        Interval::Friday => "FRI",
+        Interval::Saturday => "SAT",
         Interval::Weekdays => "1-5",
     };
 
     let minute = schedule.minute.min(59);
     let hour = schedule.hour.min(23);
 
-    format!("0 {minute} {hour} * * {days}")
+    let expression = format!("0 {minute} {hour} * * {days}");
+    info!("setting cron expression {}", expression);
+    expression
 }
