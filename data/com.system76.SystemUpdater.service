@@ -11,5 +11,5 @@ KillMode=process
 SendSIGKILL=no
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 Alias=pop-system-updater.service
