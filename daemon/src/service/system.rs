@@ -5,7 +5,7 @@ use async_cron_scheduler::*;
 use chrono::Local;
 use config::{Interval, Schedule};
 use flume::Sender;
-use pop_system_updater::config;
+use pop_system_updater::config::{self, Config};
 use pop_system_updater::dbus::PopService;
 use pop_system_updater::dbus::{
     server::{self, Server},
@@ -111,9 +111,19 @@ pub async fn run() {
 
     let mut update_job: Option<JobId> = None;
 
-    if let Some(ref conf) = config.schedule {
-        update_job = Some(schedule_job(&mut scheduler, conf, &sender));
+    let mut update_scheduler = |config: &Config| {
+        if let Some(id) = update_job.take() {
+            scheduler.remove(id);
+        }
+
+        if let Some(ref conf) = config.schedule {
+            update_job = Some(schedule_job(&mut scheduler, conf, &sender));
+        } else if config.auto_update {
+            update_job = Some(auto_job(&mut scheduler, &sender));
+        }
     };
+
+    update_scheduler(&config);
 
     let sig_duration = std::time::Duration::from_secs(1);
 
@@ -151,12 +161,6 @@ pub async fn run() {
             while let Ok(event) = receiver.recv_async().await {
                 info!("received event: {:?}", event);
                 match event {
-                    Event::AutoUpdate => {
-                        if config.auto_update {
-                            service.auto_update(&connection).await
-                        }
-                    }
-
                     Event::CheckForUpdates => {
                         service.check_for_updates().await;
                         service.update_notification(&connection).await;
@@ -164,27 +168,14 @@ pub async fn run() {
 
                     Event::Repair => service.repair(&connection).await,
 
-                    Event::Update => {
-                        if config.schedule.is_none() {
-                            service.auto_update(&connection).await;
-                        } else {
-                            service.check_for_updates().await;
-                        }
-                    }
+                    Event::Update => service.auto_update(&connection).await,
 
                     Event::SetAutoUpdate(enable) => {
                         info!("setting auto-update mode to {}", enable);
 
                         config.auto_update = enable;
-                        if let Some(id) = update_job.take() {
-                            scheduler.remove(id);
-                        }
 
-                        if enable {
-                            if let Some(ref conf) = config.schedule {
-                                update_job = Some(schedule_job(&mut scheduler, conf, &sender));
-                            }
-                        }
+                        update_scheduler(&config);
 
                         let config = config.clone();
                         tokio::spawn(async move {
@@ -198,13 +189,7 @@ pub async fn run() {
 
                         config.schedule = schedule;
 
-                        if let Some(id) = update_job.take() {
-                            scheduler.remove(id);
-                        }
-
-                        if let Some(ref conf) = config.schedule {
-                            update_job = Some(schedule_job(&mut scheduler, conf, &sender));
-                        }
+                        update_scheduler(&config);
 
                         let config = config.clone();
                         tokio::spawn(async move {
@@ -253,6 +238,16 @@ async fn restart_session_services() {
         .await;
 }
 
+fn auto_job(scheduler: &mut Scheduler<Local>, sender: &Sender<Event>) -> JobId {
+    info!("scheduling every 12 hours, in addition to now");
+    let _ = sender.send(Event::Update);
+
+    let sender = sender.clone();
+    scheduler.insert(Job::cron("0 0 */12 * * *").unwrap(), move |_| {
+        let _ = sender.send(Event::Update);
+    })
+}
+
 fn schedule_job(
     scheduler: &mut Scheduler<Local>,
     schedule: &Schedule,
@@ -261,7 +256,6 @@ fn schedule_job(
     info!("scheduling for {:?}", schedule);
     let sender = sender.clone();
     scheduler.insert(Job::cron(&*cron_expression(schedule)).unwrap(), move |_| {
-        info!("UPDATE TRIGGERED");
         let _ = sender.send(Event::Update);
     })
 }

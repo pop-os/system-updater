@@ -14,7 +14,6 @@ pub const IFACE_LOCAL: &str = "/com/system76/SystemUpdater/Local";
 
 #[derive(Debug)]
 pub enum Event {
-    AutoUpdate,
     CheckForUpdates,
     Exit,
     Repair,
