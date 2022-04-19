@@ -257,7 +257,7 @@ pub async fn run() {
 
                     Event::Exit => {
                         info!("shutting down");
-                        std::process::exit(1);
+                        std::process::exit(0);
                     }
                 }
             }
