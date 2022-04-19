@@ -13,6 +13,7 @@ pub struct Dialog(pub gtk::Dialog);
 impl Dialog {
     pub fn new(widget: &gtk::Widget, func: impl Fn(Config) + 'static) -> Self {
         enum Event {
+            AutoUpdateChanged,
             Exit,
             UpdateConfig,
         }
@@ -127,6 +128,21 @@ impl Dialog {
         });
 
         glib_spawn(async move {
+            let disable_scheduling = |insensitive: bool| {
+                hour.set_sensitive(!insensitive);
+                minute.set_sensitive(!insensitive);
+                time_of_day.set_sensitive(!insensitive);
+                interval.set_sensitive(!insensitive);
+
+                let label_ctx = schedule_label.style_context();
+
+                if !insensitive {
+                    label_ctx.remove_class("dim-label");
+                } else {
+                    label_ctx.add_class("dim-label");
+                }
+            };
+
             let mut config = pop_system_updater::config::load_system_config().await;
 
             let schedule = match config.schedule.as_ref() {
@@ -148,8 +164,6 @@ impl Dialog {
                 Interval::Weekdays => 7,
             }));
 
-            when_available.set_active(config.schedule.is_none());
-
             let (hour_value, am) = match crate::utils::as_12(schedule.hour) {
                 (hour, false) => (hour, 0),
                 (hour, true) => (hour, 1),
@@ -159,31 +173,25 @@ impl Dialog {
             hour.set_value(hour_value as u32);
             minute.set_value(schedule.minute as u32);
 
+            if config.schedule.is_none() {
+                disable_scheduling(true);
+                when_available.set_active(true);
+            }
+
             // Connect widgets now that state is set.
+            let tx_ = tx.clone();
             let update_config = Rc::new(Box::new(move || {
-                glib_send(tx.clone(), Event::UpdateConfig);
+                glib_send(tx_.clone(), Event::UpdateConfig);
             }));
 
-            let update_sensitivity = |insensitive: bool| {
-                hour.set_sensitive(!insensitive);
-                minute.set_sensitive(!insensitive);
-                time_of_day.set_sensitive(!insensitive);
-                interval.set_sensitive(!insensitive);
-
-                let label_ctx = schedule_label.style_context();
-
-                if !insensitive {
-                    label_ctx.remove_class("dim-label");
-                } else {
-                    label_ctx.add_class("dim-label");
-                }
-            };
-
-            update_sensitivity(config.schedule.is_none());
-
+            let tx = tx.clone();
             when_available.connect_changed_active({
                 let update_config = update_config.clone();
-                move |_| update_config()
+                move |_| {
+                    glib_send(tx.clone(), Event::AutoUpdateChanged);
+
+                    update_config()
+                }
             });
 
             interval.connect_changed({
@@ -210,8 +218,11 @@ impl Dialog {
 
             while let Some(event) = rx.recv().await {
                 match event {
+                    Event::AutoUpdateChanged => {
+                        disable_scheduling(when_available.is_active());
+                    }
+
                     Event::UpdateConfig => {
-                        update_sensitivity(config.schedule.is_none());
                         let pm = time_of_day.active() == Some(1);
 
                         let mut hour = hour.value() as u8;
