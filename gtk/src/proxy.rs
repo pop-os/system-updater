@@ -67,6 +67,16 @@ pub fn initialize_service() -> Sender<ProxyEvent> {
                     if let Err(why) = result {
                         eprintln!("failed to change scheduling: {}", why);
                     }
+
+                    if let Err(why) = session_proxy
+                        .notifications_enabled(!config.auto_update)
+                        .await
+                    {
+                        eprintln!(
+                            "failed to set auto-update config with user session service: {:?}",
+                            why
+                        );
+                    }
                 }
 
                 ProxyEvent::SetNotificationFrequency(frequency) => {

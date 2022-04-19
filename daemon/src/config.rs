@@ -51,12 +51,14 @@ impl Default for Config {
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type)]
 pub struct LocalConfig {
+    pub enabled: bool,
     pub notification_frequency: Frequency,
 }
 
 impl Default for LocalConfig {
     fn default() -> Self {
         Self {
+            enabled: true,
             notification_frequency: Frequency::Daily,
         }
     }

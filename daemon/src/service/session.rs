@@ -80,13 +80,18 @@ pub struct State {
 
 impl State {
     async fn check_for_updates(&mut self, config: &LocalConfig) {
+        self.schedule_handle.abort();
+
+        if !config.enabled {
+            info!("notifications disabled");
+            return;
+        }
+
         let now = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs());
 
         let next_update = next_update(config, &self.cache);
-
-        self.schedule_handle.abort();
 
         if next_update > now {
             let next = next_update - now;

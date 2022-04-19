@@ -9,6 +9,7 @@ use crate::config::Frequency;
     default_path = "/com/system76/SystemUpdater/Local"
 )]
 pub trait LocalClient {
+    fn notifications_enabled(&mut self, enabled: bool) -> zbus::Result<()>;
     fn notification_frequency(&mut self) -> zbus::Result<Frequency>;
     fn set_notification_frequency(&mut self, frequency: Frequency) -> zbus::Result<()>;
 }

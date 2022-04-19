@@ -13,6 +13,13 @@ pub struct LocalServer {
 #[rustfmt::skip]
 #[dbus_interface(name = "com.system76.SystemUpdater.Local")]
 impl LocalServer {
+    /// Enable or disable notifications
+    async fn notifications_enabled(&mut self, enabled: bool) {
+        self.config.enabled = enabled;
+        crate::config::write_session_config(&self.config).await;
+        let _ = self.service.send(LocalEvent::UpdateConfig(self.config.clone())).await;
+    }
+
     /// Get the frequency that the notification prompt will show.
     async fn notification_frequency(&mut self) -> Frequency {
         self.config.notification_frequency
