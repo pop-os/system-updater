@@ -143,14 +143,11 @@ impl Dialog {
                 }
             };
 
-            let mut config = pop_system_updater::config::load_system_config().await;
+            let config = pop_system_updater::config::load_system_config().await;
 
             let schedule = match config.schedule.as_ref() {
                 Some(sched) => sched.clone(),
-                None => {
-                    config.schedule = Some(Config::default_schedule());
-                    Config::default_schedule()
-                }
+                None => Config::default_schedule(),
             };
 
             interval.set_active(Some(match schedule.interval {
