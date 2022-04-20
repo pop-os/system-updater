@@ -59,7 +59,7 @@ impl Default for LocalConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            notification_frequency: Frequency::Daily,
+            notification_frequency: Frequency::Weekly,
         }
     }
 }
