@@ -3,21 +3,13 @@
 
 use crate::utils;
 use anyhow::Context;
-use apt_cmd::fetch::{FetchEvent, FetcherExt};
 use apt_cmd::lock::apt_lock_wait;
-use apt_cmd::request::Request as AptRequest;
 use apt_cmd::{AptGet, AptMark, Dpkg};
 use futures::Stream;
 use futures::StreamExt;
-use std::collections::HashSet;
-use std::fs::File;
-use std::path::Path;
 use std::pin::Pin;
 use std::process::Stdio;
-use std::sync::Arc;
-use std::time::Duration;
 use tokio::process::{Child, Command};
-use tokio::sync::mpsc::UnboundedReceiver;
 
 pub async fn update(conn: zbus::Connection) -> bool {
     const SOURCE: &str = "apt";
@@ -87,11 +79,6 @@ async fn system_update(service_requires_update: &mut bool) -> anyhow::Result<()>
 
     let mut packages: Vec<&str> = packages.iter().map(String::as_str).collect();
 
-    info!("fetching packages");
-    let mut events = fetch(&packages).await.context("could not fetch packages")?;
-
-    while let Some(_event) = events.recv().await {}
-
     if let Some(id) = packages.iter().position(|&p| p == "pop-system-updater") {
         info!("service requires update");
         *service_requires_update = true;
@@ -135,21 +122,6 @@ pub async fn packages_to_fetch() -> anyhow::Result<Vec<String>> {
     Ok(packages)
 }
 
-async fn uris(packages: &[&str]) -> anyhow::Result<HashSet<AptRequest>> {
-    apt_lock_wait().await;
-
-    AptGet::new()
-        .noninteractive()
-        .fetch_uris(&{
-            let mut args = vec!["install"];
-            args.extend_from_slice(packages);
-            args
-        })
-        .await
-        .context("failed to exec `apt-get install --print-uris`")?
-        .context("failed to fetch package URIs from `apt-get install`")
-}
-
 pub async fn upgrade() -> anyhow::Result<()> {
     apt_lock_wait().await;
 
@@ -166,58 +138,6 @@ pub async fn upgrade() -> anyhow::Result<()> {
     let _ = AptMark::new().unhold(["pop-system-updater"]).await;
 
     result
-}
-
-/// Get a list of APT URIs to fetch for this operation, and then fetch them.
-async fn fetch(packages: &[&str]) -> anyhow::Result<UnboundedReceiver<FetchEvent>> {
-    let uris = uris(packages)
-        .await
-        .context("failed to get URIs for apt packages")?;
-
-    apt_lock_wait().await;
-    let _lock_files = hold_apt_locks()?;
-
-    const ARCHIVES: &str = "/var/cache/apt/archives/";
-
-    const CONCURRENT_FETCHES: usize = 4;
-    const DELAY_BETWEEN: u64 = 100;
-    const RETRIES: u16 = 3;
-
-    let client = reqwest::Client::builder()
-        .pool_idle_timeout(std::time::Duration::from_secs(20))
-        .pool_max_idle_per_host(0)
-        .build()
-        .unwrap();
-
-    // The system which fetches packages we send requests to
-    let (fetcher, events) = async_fetcher::Fetcher::new(client)
-        .connections_per_file(1)
-        .delay_between_requests(DELAY_BETWEEN)
-        .timeout(Duration::from_secs(10))
-        .retries(RETRIES)
-        .into_package_fetcher()
-        .concurrent(CONCURRENT_FETCHES)
-        .fetch(
-            futures::stream::iter(uris.into_iter().map(Arc::new)),
-            Path::new(ARCHIVES).into(),
-        );
-
-    tokio::spawn(fetcher);
-
-    Ok(events)
-}
-
-const DPKG_LOCK: &str = "/var/lib/dpkg/lock";
-const LISTS_LOCK: &str = "/var/lib/apt/lists/lock";
-
-fn hold_apt_locks() -> anyhow::Result<(File, File)> {
-    let lists = File::open(LISTS_LOCK)
-        .with_context(|| format!("failed to acquire lock for {}", LISTS_LOCK))?;
-
-    let dpkg = File::open(DPKG_LOCK)
-        .with_context(|| format!("failed to acquire lock for {}", DPKG_LOCK))?;
-
-    Ok((lists, dpkg))
 }
 
 pub type Packages = Pin<Box<dyn Stream<Item = String> + Send>>;

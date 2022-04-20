@@ -9,7 +9,6 @@ publish = false
 [dependencies]
 anyhow = "1.0.56"
 apt-cmd = { git = "https://github.com/pop-os/apt-cmd" }
-async-fetcher = { git = "https://github.com/pop-os/async-fetcher" }
 as-result = "0.2.1"
 async-stream = "0.3.3"
 better-panic = "0.3.0"
