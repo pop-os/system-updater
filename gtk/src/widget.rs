@@ -114,8 +114,8 @@ impl SettingsWidget {
                 notification_schedule = cascade! {
                     gtk::ComboBoxText::new();
                     ..set_valign(gtk::Align::Center);
-                    ..append_text(&fl!("schedule-daily"));
                     ..append_text(&fl!("schedule-weekly"));
+                    ..append_text(&fl!("schedule-daily"));
                     ..append_text(&fl!("schedule-monthly"));
                 };
 
@@ -251,8 +251,8 @@ impl SettingsWidget {
                         let _ = ptx
                             .send(ProxyEvent::SetNotificationFrequency(
                                 match notification_schedule.active() {
-                                    Some(0) => Frequency::Daily,
-                                    Some(1) => Frequency::Weekly,
+                                    Some(0) => Frequency::Weekly,
+                                    Some(1) => Frequency::Daily,
                                     _ => Frequency::Monthly,
                                 },
                             ))
