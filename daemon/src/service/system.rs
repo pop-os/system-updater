@@ -204,7 +204,7 @@ pub async fn run() {
                     tokio::time::interval(std::time::Duration::from_secs(60 * 60 * 12));
                 loop {
                     interval.tick().await;
-                    let _ = sender.send_async(Event::Update).await;
+                    let _ = sender.send_async(Event::CheckForUpdates).await;
                 }
             }
         },
