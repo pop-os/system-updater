@@ -65,10 +65,11 @@ impl Default for LocalConfig {
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, Type)]
+#[repr(u32)]
 pub enum Frequency {
-    Daily,
-    Weekly,
-    Monthly,
+    Weekly = 0,
+    Daily = 1,
+    Monthly = 2,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type)]
