@@ -40,7 +40,7 @@ impl Service {
         let connection = connection.clone();
         let updating = self.updating.clone();
 
-        self.update_task = Some(tokio::task::spawn_local(async move {
+        self.update_task = Some(tokio::task::spawn(async move {
             let _ = futures::join!(
                 crate::package_managers::apt::update(connection.clone()),
                 crate::package_managers::flatpak::update(connection.clone()),
@@ -163,7 +163,7 @@ pub async fn run() -> anyhow::Result<()> {
         .await
         .map_err(|why| match why {
             zbus::Error::NameTaken => anyhow::anyhow!("system service is already active"),
-            other => anyhow::anyhow!("could not register system service: {}", other)
+            other => anyhow::anyhow!("could not register system service: {}", other),
         })?;
 
     info!("DBus connection established");

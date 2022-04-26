@@ -43,13 +43,13 @@ pub async fn run() -> anyhow::Result<()> {
         .await
         .context("failed to serve service")?;
 
-        connection
-            .request_name("com.system76.SystemUpdater.Local")
-            .await
-            .map_err(|why| match why {
-                zbus::Error::NameTaken => anyhow::anyhow!("user service is already active"),
-                other => anyhow::anyhow!("could not register user service: {}", other)
-            })?;
+    connection
+        .request_name("com.system76.SystemUpdater.Local")
+        .await
+        .map_err(|why| match why {
+            zbus::Error::NameTaken => anyhow::anyhow!("user service is already active"),
+            other => anyhow::anyhow!("could not register user service: {}", other),
+        })?;
 
     let mut state = State {
         cache: config::load_session_cache().await,

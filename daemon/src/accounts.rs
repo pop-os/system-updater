@@ -14,7 +14,7 @@ pub fn is_desktop_account(euid: u32) -> bool {
 /// Users which are defined as being desktop accounts.
 ///
 /// On Linux, this means the user ID is between `UID_MIN` and `UID_MAX` in `/etc/login.defs`.
-pub fn user_names() -> Box<dyn Iterator<Item = String>> {
+pub fn user_names() -> Box<dyn Iterator<Item = String> + Send> {
     let (uid_min, uid_max) = match uid_min_max() {
         Ok(v) => v,
         Err(_) => return Box::new(std::iter::empty()),

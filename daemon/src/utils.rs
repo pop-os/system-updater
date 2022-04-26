@@ -49,24 +49,23 @@ pub fn command_exists(cmd: &str) -> bool {
 pub async fn error_handler(conn: &zbus::Connection, source: &str, error: anyhow::Error) {
     use std::fmt::Write;
 
-    let mut chain = anyhow::Chain::new(error.as_ref());
-
     let mut output = String::new();
 
-    if let Some(why) = chain.next() {
-        let _ = write!(&mut output, "{}", why);
-        output.push_str(&why.to_string());
-        for why in chain {
-            let _ = write!(&mut output, ": {}", why);
+    {
+        let mut chain = anyhow::Chain::new(error.as_ref());
+        if let Some(why) = chain.next() {
+            let _ = write!(&mut output, "{}", why);
+            output.push_str(&why.to_string());
+            for why in chain {
+                let _ = write!(&mut output, ": {}", why);
+            }
         }
-
-        error!("{}: {}", source, output);
-
-        use pop_system_updater::dbus::server::{context, Server};
-
-        context(conn, |ctx| async move {
-            Server::error(&ctx, source, &output).await
-        })
-        .await;
     }
+
+    error!("{}: {}", source, output);
+    use pop_system_updater::dbus::server::{context, Server};
+    context(conn, |ctx| async move {
+        Server::error(&ctx, source, &output).await
+    })
+    .await;
 }

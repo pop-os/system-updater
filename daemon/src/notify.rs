@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use notify_rust::{Hint, Notification, Urgency};
 
-pub async fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
+pub fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
     let show_notification = || {
         Notification::new()
             .icon("distributor-logo")
@@ -21,7 +21,7 @@ pub async fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
     let mut notification = show_notification();
 
     while notification.is_err() {
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        std::thread::sleep(Duration::from_secs(1));
 
         notification = show_notification();
     }
@@ -49,8 +49,7 @@ pub async fn updates_available() {
                     .await;
             });
         },
-    )
-    .await
+    );
 }
 
 /// Restart the appcenter to force that the packagekit cache is refreshed.
