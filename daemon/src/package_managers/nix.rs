@@ -10,10 +10,13 @@ pub async fn update(conn: &zbus::Connection) {
         return;
     }
 
-    let upgrade = &["nix-env", "--upgrade"];
-    let prune = &["nix-collect-garbage", "-d"];
+    const COMMANDS: &[&[&str]] = &[
+        &["nix-channel", "--update"],
+        &["nix-env", "--upgrade"],
+        &["nix-collect-garbage", "-d"],
+    ];
 
-    if let Err(why) = utils::async_commands(&[upgrade, prune]).await {
+    if let Err(why) = utils::async_commands(COMMANDS).await {
         utils::error_handler(conn, SOURCE, why).await;
     }
 }
