@@ -6,15 +6,17 @@ use crate::utils;
 pub async fn update(conn: &zbus::Connection) {
     const SOURCE: &str = "nix";
 
-    if !utils::command_exists("nix-env") {
-        return;
-    }
-
     const COMMANDS: &[&[&str]] = &[
         &["nix-channel", "--update"],
         &["nix-env", "--upgrade"],
         &["nix-collect-garbage", "-d"],
     ];
+
+    for command in COMMANDS {
+        if !utils::command_exists(command[0]) {
+            return;
+        }
+    }
 
     if let Err(why) = utils::async_commands(COMMANDS).await {
         utils::error_handler(conn, SOURCE, why).await;
