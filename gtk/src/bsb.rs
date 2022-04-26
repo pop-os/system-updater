@@ -22,14 +22,20 @@ impl std::ops::Deref for BetterSpinButton {
 impl BetterSpinButton {
     pub fn new(min: u32, max: u32, inc_small: u32, inc_large: u32, padding: u32) -> Self {
         // Increase the value while preventing it from exceeding the max.
-        let increase = move |value: u32, inc: u32| (value + inc).min(max);
+        let increase = move |value: u32, inc: u32| {
+            if value + inc > max {
+                min
+            } else {
+                value + inc
+            }
+        };
 
         // Decrease the value while preventing it from exceeding the min.
         let decrease = move |value: u32, inc: u32| {
-            if value < inc {
-                min
+            if min + inc > value {
+                max
             } else {
-                (value - inc).max(min)
+                value - inc
             }
         };
 
@@ -115,9 +121,9 @@ impl BetterSpinButton {
                 let new_value = match text.as_str().parse::<u32>() {
                     Ok(value) => {
                         if value < min {
-                            min
-                        } else if value > max {
                             max
+                        } else if value > max {
+                            min
                         } else {
                             value
                         }
