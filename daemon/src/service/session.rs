@@ -114,7 +114,9 @@ impl State {
         let f2 = async {
             if crate::package_managers::updates_are_available().await {
                 info!("displaying notification of available updates");
-                crate::notify::updates_available().await;
+                std::thread::spawn(move || {
+                    crate::notify::updates_available();
+                });
             }
         };
 

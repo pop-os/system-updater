@@ -35,7 +35,7 @@ pub fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
         });
 }
 
-pub async fn updates_available() {
+pub fn updates_available() {
     notify(
         "System updates are available to install",
         "Click here to view available updates",
