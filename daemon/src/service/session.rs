@@ -27,7 +27,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     let connection = Connection::session()
         .await
-        .expect("failed to initiate session connection");
+        .context("failed to initiate session connection")?;
 
     connection
         .object_server()
@@ -41,12 +41,15 @@ pub async fn run() -> anyhow::Result<()> {
             },
         )
         .await
-        .expect("failed to serve service");
+        .context("failed to serve service")?;
 
-    connection
-        .request_name("com.system76.SystemUpdater.Local")
-        .await
-        .expect("failed to request session name");
+        connection
+            .request_name("com.system76.SystemUpdater.Local")
+            .await
+            .map_err(|why| match why {
+                zbus::Error::NameTaken => anyhow::anyhow!("user service is already active"),
+                other => anyhow::anyhow!("could not register user service: {}", other)
+            })?;
 
     let mut state = State {
         cache: config::load_session_cache().await,
