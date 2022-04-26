@@ -12,7 +12,7 @@ mod signal_handler;
 mod utils;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     std::env::set_var("LANG", "C");
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "info");
@@ -32,9 +32,11 @@ async fn main() {
     let main_future = async move {
         let effective_uid = users::get_effective_uid();
         if effective_uid == 0 {
-            crate::service::system::run().await;
+            crate::service::system::run().await
         } else if accounts::is_desktop_account(effective_uid) {
-            let _ = crate::service::session::run().await;
+            crate::service::session::run().await
+        } else {
+            Err(anyhow::anyhow!("service must be launched from either root or a desktop user"))
         }
     };
 

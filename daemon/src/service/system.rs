@@ -1,6 +1,7 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
+use anyhow::Context;
 use async_cron_scheduler::*;
 use chrono::Local;
 use config::{Interval, Schedule};
@@ -131,7 +132,7 @@ impl Service {
     }
 }
 
-pub async fn run() {
+pub async fn run() -> anyhow::Result<()> {
     info!("initiating system service");
     crate::signal_handler::init();
 
@@ -141,7 +142,7 @@ pub async fn run() {
 
     let connection = Connection::system()
         .await
-        .expect("failed to initialize dbus connection");
+        .context("failed to initialize dbus connection")?;
 
     connection
         .object_server()
@@ -155,12 +156,15 @@ pub async fn run() {
             },
         )
         .await
-        .expect("failed to serve service");
+        .context("failed to serve service")?;
 
     connection
         .request_name("com.system76.SystemUpdater")
         .await
-        .expect("failed to request name");
+        .map_err(|why| match why {
+            zbus::Error::NameTaken => anyhow::anyhow!("system service is already active"),
+            other => anyhow::anyhow!("could not register system service: {}", other)
+        })?;
 
     info!("DBus connection established");
 
@@ -265,6 +269,8 @@ pub async fn run() {
             info!("stop listening for events");
         }
     );
+
+    Ok(())
 }
 
 /// Ensures that session services are always updated and restarted along with this service.
