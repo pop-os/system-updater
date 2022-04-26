@@ -127,7 +127,7 @@ pub async fn upgrade() -> anyhow::Result<()> {
 
     let _ = AptMark::new().hold(["pop-system-updater"]).await;
 
-    let result = AptGet::new()
+    let mut result = AptGet::new()
         .noninteractive()
         .force()
         .allow_downgrades()
@@ -136,6 +136,15 @@ pub async fn upgrade() -> anyhow::Result<()> {
         .context("failed to install updates");
 
     let _ = AptMark::new().unhold(["pop-system-updater"]).await;
+
+    if result.is_ok() {
+        result = AptGet::new()
+            .noninteractive()
+            .autoremove()
+            .status()
+            .await
+            .context("failed to autoremove packages");
+    }
 
     result
 }
