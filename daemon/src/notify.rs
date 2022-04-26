@@ -36,8 +36,6 @@ pub fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
 }
 
 pub async fn updates_available() {
-    restart_appcenter().await;
-
     notify(
         "System updates are available to install",
         "Click here to view available updates",
@@ -50,19 +48,4 @@ pub async fn updates_available() {
             });
         },
     );
-}
-
-/// Restart the appcenter to force that the packagekit cache is refreshed.
-async fn restart_appcenter() {
-    let _ = tokio::process::Command::new("killall")
-        .arg(APPCENTER)
-        .status()
-        .await;
-
-    tokio::spawn(async move {
-        tokio::process::Command::new(APPCENTER)
-            .arg("-s")
-            .status()
-            .await
-    });
 }
