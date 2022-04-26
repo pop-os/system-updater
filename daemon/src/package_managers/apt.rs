@@ -141,6 +141,7 @@ pub async fn upgrade() -> anyhow::Result<()> {
         result = AptGet::new()
             .noninteractive()
             .autoremove()
+            .force()
             .status()
             .await
             .context("failed to autoremove packages");
