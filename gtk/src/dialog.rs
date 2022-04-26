@@ -74,12 +74,12 @@ impl Dialog {
                     .build();
 
                 hour = cascade! {
-                    crate::bsb::BetterSpinButton::new(1, 12, 1, 3, 2);
+                    crate::bsb::BetterSpinButton::new(1, 12, 1, 1, 2);
                     ..set_valign(gtk::Align::Center);
                 };
 
                 minute = cascade! {
-                    crate::bsb::BetterSpinButton::new(0, 59, 1, 10, 2);
+                    crate::bsb::BetterSpinButton::new(0, 59, 1, 1, 2);
                     ..set_valign(gtk::Align::Center);
                 };
 
