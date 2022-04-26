@@ -11,6 +11,8 @@ mod service;
 mod signal_handler;
 mod utils;
 
+use anyhow::Context;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     std::env::set_var("LANG", "C");
@@ -36,10 +38,14 @@ async fn main() -> anyhow::Result<()> {
         } else if accounts::is_desktop_account(effective_uid) {
             crate::service::session::run().await
         } else {
-            Err(anyhow::anyhow!("service must be launched from either root or a desktop user"))
+            Err(anyhow::anyhow!(
+                "service must be launched from either root or a desktop user"
+            ))
         }
     };
 
-    // Run inside this to allow spawning tasks locally.
-    tokio::task::LocalSet::new().run_until(main_future).await
+    // Spawns main future on tokio runtime for best async performance.
+    tokio::spawn(main_future)
+        .await
+        .context("failed to spawn on tokio runtime")?
 }
