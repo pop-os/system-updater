@@ -114,7 +114,9 @@ impl State {
         let f2 = async {
             if crate::package_managers::updates_are_available().await {
                 info!("displaying notification of available updates");
+                let handle = tokio::runtime::Handle::current();
                 std::thread::spawn(move || {
+                    let _reactor_context = handle.enter();
                     crate::notify::updates_available();
                 });
             }
