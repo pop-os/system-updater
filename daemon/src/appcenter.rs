@@ -37,6 +37,13 @@ pub async fn show_updates() {
                     return;
                 }
 
+                // Kill the process if it's running.
+                let _ = tokio::process::Command::new("sh")
+                    .args(&["-c", "kill $(pidof io.elementary.appcenter)"])
+                    .status()
+                    .await;
+
+                // Start a new service process.
                 let _ = tokio::process::Command::new("io.elementary.appcenter")
                     .arg("--silent")
                     .spawn();
