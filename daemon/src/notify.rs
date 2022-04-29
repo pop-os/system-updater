@@ -1,8 +1,6 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
-const APPCENTER: &str = "io.elementary.appcenter";
-
 use std::time::Duration;
 
 use notify_rust::{Hint, Notification, Urgency};
@@ -40,12 +38,7 @@ pub fn updates_available() {
         "System updates are available to install",
         "Click here to view available updates",
         || {
-            tokio::spawn(async move {
-                let _ = tokio::process::Command::new(APPCENTER)
-                    .arg("-u")
-                    .status()
-                    .await;
-            });
+            tokio::spawn(pop_system_updater::appcenter::show_updates());
         },
     );
 }

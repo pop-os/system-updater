@@ -6,5 +6,6 @@ extern crate zbus;
 #[macro_use]
 extern crate tracing;
 
+pub mod appcenter;
 pub mod config;
 pub mod dbus;
