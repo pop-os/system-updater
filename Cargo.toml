@@ -1,2 +1,2 @@
 [workspace]
-members = ["daemon", "gtk", "scheduler"]
+members = ["daemon", "gtk", "scheduler", "shop-zbus"]
