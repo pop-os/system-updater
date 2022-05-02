@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-DESTDIR=debian/pop-system-updater
+DESTDIR=debian/tmp
 CLEAN ?= 1
 DEBUG ?= 0
 VENDOR ?= 1

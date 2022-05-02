@@ -6,7 +6,7 @@ extern crate cascade;
 
 use gio::{prelude::*, ApplicationFlags};
 use gtk::{prelude::*, Application};
-use pop_system_updater_gtk::SettingsWidget;
+use pop_system_updater_gtk::{localize, SettingsWidget};
 
 pub const APP_ID: &str = "com.system76.UpgradeManager";
 
@@ -55,16 +55,4 @@ fn main() {
     });
 
     application.run();
-}
-
-pub fn localize() {
-    let localizer = pop_system_updater_gtk::localize::localizer();
-    let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
-
-    if let Err(error) = localizer.select(&requested_languages) {
-        eprintln!(
-            "Error while loading language for pop-desktop-widget {}",
-            error
-        );
-    }
 }

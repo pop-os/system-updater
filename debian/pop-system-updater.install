@@ -1,0 +1,4 @@
+/lib/systemd/system/com.system76.SystemUpdater.service
+/lib/systemd/user/com.system76.SystemUpdater.Local.service
+/usr/bin/pop-system-updater
+/usr/share/dbus-1/system.d/com.system76.SystemUpdater.conf

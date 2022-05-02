@@ -20,5 +20,20 @@ Depends:
   libssl3 | libssl1.1,
   ${misc:Depends},
   ${shlibs:Depends}
-Description: Distribution Installer DBus Service
+Description: Automatic System Updates for Pop!_OS
 
+Package: libpop-system-updater-gtk
+Architecture: amd64 arm64
+Depends:
+  libgtk-3-0
+  ${misc:Depends},
+  ${shlibs:Depends}
+Description: GTK widget library for dynamic linking
+
+Package: libpop-system-updater-gtk-dev
+Architecture: amd64 arm64
+Depends:
+  libpop-system-updater-gtk,
+  ${misc:Depends},
+  ${shlibs:Depends}
+Description: Development libraries for libpop-system-updater-gtk

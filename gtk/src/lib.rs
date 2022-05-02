@@ -12,3 +12,15 @@ pub(crate) mod utils;
 mod widget;
 
 pub use self::widget::SettingsWidget;
+
+pub fn localize() {
+    let localizer = localize::localizer();
+    let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
+
+    if let Err(error) = localizer.select(&requested_languages) {
+        eprintln!(
+            "Error while loading language for system-updater-gtk {}",
+            error
+        );
+    }
+}
