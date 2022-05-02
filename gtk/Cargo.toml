@@ -26,7 +26,7 @@ tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 zbus = { version = "2.2.0", default-features = false, features = ["tokio"] }
 
 [dependencies.tokio]
-version = "1.18.0"
+version = "1.18.1"
 features = ["rt", "macros"]
 
 [features]

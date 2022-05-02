@@ -470,6 +470,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fff2a6927b3bb87f9595d67196a70493f627687a71d87a0d692242c33f58c11"
 
 [[package]]
+name = "cdylib-link-lines"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a317db7ea5b455731e51d7f632762716fa5c0b1098dcaa6221e55e2386d170f2"
+dependencies = [
+ "serde",
+ "serde_derive",
+ "toml",
+]
+
+[[package]]
 name = "cfg-expr"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1338,6 +1349,17 @@ dependencies = [
  "once_cell",
  "pango",
  "pkg-config",
+]
+
+[[package]]
+name = "gtk-ffi"
+version = "0.1.0"
+dependencies = [
+ "cdylib-link-lines",
+ "glib",
+ "gtk",
+ "gtk-sys",
+ "pop-system-updater-gtk",
 ]
 
 [[package]]
