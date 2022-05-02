@@ -35,7 +35,7 @@ zbus = { version = "2.2.0", default-features = false, features = ["tokio"] }
 zvariant = { version = "3.2.0", features = ["enumflags2"] }
 
 [dependencies.tokio]
-version = "1.18.0"
+version = "1.18.1"
 features = ["full"]
 
 [features]
