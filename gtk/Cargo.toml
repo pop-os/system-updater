@@ -23,7 +23,7 @@ ron = "0.7.0"
 rust-embed = "6.4.0"
 tracing = "0.1.34"
 tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
-zbus = "2.1.1"
+zbus = { version = "2.1.1", default-features = false, features = ["tokio"] }
 
 [dependencies.tokio]
 version = "1.17.0"
