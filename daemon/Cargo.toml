@@ -7,7 +7,7 @@ license = "MPL-2.0"
 publish = false
 
 [dependencies]
-anyhow = "1.0.56"
+anyhow = "1.0.57"
 apt-cmd = { git = "https://github.com/pop-os/apt-cmd" }
 as-result = "0.2.1"
 async-cron-scheduler = { path = "../scheduler", features = ["logging"] }
@@ -19,23 +19,23 @@ enumflags2 = "0.7.5"
 flume = "0.10.12"
 fork = "0.1.19"
 futures = "0.3.21"
-libc = "0.2.124"
+libc = "0.2.125"
 notify-rust = { version = "4.5.8", default-features = false, features = ["dbus"] }
 os-release = "0.1.0"
 reqwest = { version = "0.11.10", default-features = false, features = ["rustls-tls", "trust-dns"] }
 ron = "0.7.0"
-serde = { version = "1.0.136", features = ["derive"] }
-serde_repr = "0.1.7"
+serde = { version = "1.0.137", features = ["derive"] }
+serde_repr = "0.1.8"
 pop-shop-zbus = { path = "../shop-zbus" }
 tracing = "0.1.34"
 tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 users = "0.11.0"
 whitespace-conf = "1.0.0"
-zbus = { version = "2.1.1", default-features = false, features = ["tokio"] }
-zvariant = { version = "3.1.2", features = ["enumflags2"] }
+zbus = { version = "2.2.0", default-features = false, features = ["tokio"] }
+zvariant = { version = "3.2.0", features = ["enumflags2"] }
 
 [dependencies.tokio]
-version = "1.17.0"
+version = "1.18.0"
 features = ["full"]
 
 [features]
