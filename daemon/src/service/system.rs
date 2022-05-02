@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
 use anyhow::Context;
-use async_cron_scheduler::*;
+use async_cron_scheduler::{Job, JobId, Scheduler};
 use chrono::Local;
 use config::{Interval, Schedule};
 use flume::Sender;
+use futures::StreamExt;
 use pop_system_updater::config::{self, Config};
 use pop_system_updater::dbus::PopService;
 use pop_system_updater::dbus::{
@@ -62,8 +63,8 @@ impl Service {
         }
 
         info!("checking for system updates");
-        let _ = apt_cmd::lock::apt_lock_wait().await;
-        let _ = crate::package_managers::apt::update_package_lists().await;
+        apt_cmd::lock::apt_lock_wait().await;
+        crate::package_managers::apt::update_package_lists().await;
         info!("check for system updates complete");
     }
 
@@ -132,6 +133,30 @@ impl Service {
     }
 }
 
+// Watches for an interrupt signal.
+async fn interrupt_handler(sender: Sender<Event>) {
+    let sig_duration = std::time::Duration::from_secs(1);
+
+    loop {
+        tokio::time::sleep(sig_duration).await;
+        if crate::signal_handler::status().is_some() {
+            info!("Found interrupt");
+            let _ = sender.send_async(Event::Exit).await;
+            break;
+        }
+    }
+}
+
+// Check for updates every 12 hours.
+async fn scheduled_check(sender: Sender<Event>) {
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(60 * 60 * 12));
+
+    loop {
+        interval.tick().await;
+        let _ = sender.send_async(Event::CheckForUpdates).await;
+    }
+}
+
 pub async fn run() -> anyhow::Result<()> {
     info!("initiating system service");
     crate::signal_handler::init();
@@ -168,7 +193,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     info!("DBus connection established");
 
-    let mut config = config::load_system_config().await;
+    let mut config = config::load_system().await;
 
     let (scheduler, scheduler_service) = Scheduler::<Local>::launch(tokio::time::sleep);
 
@@ -182,36 +207,11 @@ pub async fn run() -> anyhow::Result<()> {
 
     service.update_scheduler(&config, &sender);
 
-    let sig_duration = std::time::Duration::from_secs(1);
-
     futures::join!(
         scheduler_service,
-        {
-            let sender = sender.clone();
-            async move {
-                loop {
-                    tokio::time::sleep(sig_duration).await;
-                    if crate::signal_handler::status().is_some() {
-                        info!("Found interrupt");
-                        let _ = sender.send_async(Event::Exit).await;
-                        break;
-                    }
-                }
-            }
-        },
+        interrupt_handler(sender.clone()),
         restart_session_services(),
-        // Check for updates every 12 hours.
-        {
-            let sender = sender.clone();
-            async move {
-                let mut interval =
-                    tokio::time::interval(std::time::Duration::from_secs(60 * 60 * 12));
-                loop {
-                    interval.tick().await;
-                    let _ = sender.send_async(Event::CheckForUpdates).await;
-                }
-            }
-        },
+        scheduled_check(sender.clone()),
         // The event handler, which processes all requests from DBus and the scheduler.
         async move {
             info!("listening for events");
@@ -240,7 +240,7 @@ pub async fn run() -> anyhow::Result<()> {
 
                         let config = config.clone();
                         tokio::spawn(async move {
-                            config::write_system_config(&config).await;
+                            config::write_system(&config).await;
                             info!("system configuration file updated");
                         });
                     }
@@ -254,7 +254,7 @@ pub async fn run() -> anyhow::Result<()> {
 
                         let config = config.clone();
                         tokio::spawn(async move {
-                            config::write_system_config(&config).await;
+                            config::write_system(&config).await;
                             info!("system configuration file updated");
                         });
                     }
@@ -276,7 +276,6 @@ pub async fn run() -> anyhow::Result<()> {
 /// Ensures that session services are always updated and restarted along with this service.
 async fn restart_session_services() {
     info!("restarting any session services");
-    use futures::StreamExt;
     futures::stream::iter(crate::accounts::user_names())
         .for_each_concurrent(None, |user| async {
             let accounts_service_file = ["/var/lib/AccountsService/users/", &user].concat();
@@ -286,7 +285,7 @@ async fn restart_session_services() {
 
             let user = user;
 
-            let _ = crate::utils::async_commands(&[&[
+            let _res = crate::utils::async_commands(&[&[
                 "runuser",
                 "-u",
                 &user,

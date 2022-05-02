@@ -31,6 +31,7 @@ pub struct Config {
 }
 
 impl Config {
+    #[must_use]
     pub const fn default_schedule() -> Schedule {
         Schedule {
             interval: Interval::Weekdays,
@@ -50,12 +51,12 @@ impl Default for Config {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type)]
-pub struct LocalConfig {
+pub struct Local {
     pub enabled: bool,
     pub notification_frequency: Frequency,
 }
 
-impl Default for LocalConfig {
+impl Default for Local {
     fn default() -> Self {
         Self {
             enabled: true,
@@ -92,15 +93,15 @@ pub enum Interval {
     Weekdays = 1 << 7,
 }
 
-pub async fn load_session_config() -> LocalConfig {
-    load(&session_config_path()).await
+pub async fn load_session() -> Local {
+    load(&session_path()).await
 }
 
 pub async fn load_session_cache() -> LocalCache {
     load(&session_cache_path()).await
 }
 
-pub async fn load_system_config() -> Config {
+pub async fn load_system() -> Config {
     load(Path::new(SYSTEM_PATH)).await
 }
 
@@ -108,20 +109,20 @@ pub async fn load_system_cache() -> Cache {
     load(Path::new(SYSTEM_CACHE)).await
 }
 
-pub async fn write_session_config(config: &LocalConfig) {
-    write(&session_config_path(), config).await
+pub async fn write_session(config: &Local) {
+    write(&session_path(), config).await;
 }
 
 pub async fn write_session_cache(cache: &LocalCache) {
-    write(&session_cache_path(), cache).await
+    write(&session_cache_path(), cache).await;
 }
 
-pub async fn write_system_config(config: &Config) {
-    write(Path::new(SYSTEM_PATH), config).await
+pub async fn write_system(config: &Config) {
+    write(Path::new(SYSTEM_PATH), config).await;
 }
 
 pub async fn write_system_cache(cache: &Cache) {
-    write(Path::new(SYSTEM_CACHE), cache).await
+    write(Path::new(SYSTEM_CACHE), cache).await;
 }
 
 async fn load<T: Default + DeserializeOwned + Serialize>(path: &Path) -> T {
@@ -146,7 +147,7 @@ async fn write<T: Serialize>(path: &Path, config: &T) {
     info!("writing config: {:?}", path);
 
     if let Some(parent) = path.parent() {
-        let _ = tokio::fs::create_dir(parent).await;
+        let _res = tokio::fs::create_dir(parent).await;
     }
 
     let config = match ron::to_string(config) {
@@ -162,7 +163,7 @@ async fn write<T: Serialize>(path: &Path, config: &T) {
     }
 }
 
-fn session_config_path() -> PathBuf {
+fn session_path() -> PathBuf {
     #[allow(deprecated)]
     std::env::home_dir().expect("NO HOME").join(LOCAL_PATH)
 }

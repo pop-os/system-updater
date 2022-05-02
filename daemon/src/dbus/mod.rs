@@ -6,7 +6,7 @@ pub mod local_client;
 pub mod local_server;
 pub mod server;
 
-use crate::config::{Frequency, LocalConfig, Schedule};
+use crate::config::{Frequency, Local, Schedule};
 
 // Where this service's interface is being served at.
 pub const IFACE: &str = "/com/system76/SystemUpdater";
@@ -27,7 +27,7 @@ pub enum Event {
 #[derive(Debug)]
 pub enum LocalEvent {
     CheckUpdates,
-    UpdateConfig(LocalConfig),
+    UpdateConfig(Local),
 }
 
 pub struct PopService<E> {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 use anyhow::Context;
-use config::{Frequency, LocalCache, LocalConfig};
+use config::{Frequency, Local, LocalCache};
 use flume::Sender;
 use pop_system_updater::config;
 use pop_system_updater::dbus::PopService;
@@ -28,7 +28,7 @@ pub async fn run() -> anyhow::Result<()> {
         .await
         .context("could not get proxy from connection")?;
 
-    let mut config = config::load_session_config().await;
+    let mut config = config::load_session().await;
     let (sender, receiver) = flume::bounded(1);
 
     let connection = Connection::session()
@@ -88,7 +88,7 @@ pub struct State {
 }
 
 impl State {
-    async fn check_for_updates(&mut self, config: &LocalConfig) {
+    async fn check_for_updates(&mut self, config: &Local) {
         self.schedule_handle.abort();
 
         if !config.enabled {
@@ -134,7 +134,7 @@ impl State {
 
 const SECONDS_IN_DAY: u64 = 60 * 60 * 24;
 
-fn next_update(config: &LocalConfig, cache: &LocalCache) -> u64 {
+fn next_update(config: &Local, cache: &LocalCache) -> u64 {
     match config.notification_frequency {
         Frequency::Daily => cache.last_update + SECONDS_IN_DAY,
         Frequency::Weekly => cache.last_update + SECONDS_IN_DAY * 7,
