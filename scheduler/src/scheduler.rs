@@ -1,8 +1,7 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
-use crate::*;
-
+use crate::{Job, JobId, TimeZoneExt};
 use chrono::DateTime;
 use flume::{RecvError, Sender};
 use futures::future::Either;
@@ -63,7 +62,7 @@ where
         command: impl Fn(JobId) + Send + Sync + 'static,
     ) -> JobId {
         let id = JobId(self.jobs.insert(()));
-        let _ = self
+        let _result = self
             .sender
             .send(SchedMessage::Insert(id, job, Box::new(command)));
         id
@@ -76,7 +75,7 @@ where
     /// ```
     pub fn remove(&mut self, job: JobId) {
         if self.jobs.remove(job.0).is_some() {
-            let _ = self.sender.send(SchedMessage::Remove(job));
+            let _res = self.sender.send(SchedMessage::Remove(job));
         }
     }
 

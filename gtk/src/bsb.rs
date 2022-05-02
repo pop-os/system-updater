@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 use gtk::prelude::*;
+use std::convert::TryFrom;
 
 pub struct BetterSpinButton {
     pub root: gtk::Box,
@@ -60,21 +61,6 @@ impl BetterSpinButton {
             });
         };
 
-        fn on_click(
-            entry: &gtk::Entry,
-            func: impl Fn(u32) -> u32 + 'static,
-            padding: u32,
-        ) -> impl Fn(&gtk::Button) + 'static {
-            glib::clone!(@weak entry => move |_| {
-                if entry.text_length() > 0 {
-                    match entry.text().as_str().parse::<u32>() {
-                        Ok(value) => entry.set_text(&*format_number(func(value), padding as usize)),
-                        Err(_) => entry.set_text(""),
-                    }
-                }
-            })
-        }
-
         let plus = cascade! {
             create_button("value-increase-symbolic");
             ..connect_clicked(on_click(&entry, move |value| increase(value, inc_small), padding));
@@ -94,11 +80,11 @@ impl BetterSpinButton {
         };
 
         BetterSpinButton {
-            entry,
             root,
+            entry,
             padding,
-            max,
             min,
+            max,
         }
     }
 
@@ -106,7 +92,7 @@ impl BetterSpinButton {
         let (tx, rx) = flume::unbounded();
 
         let id = self.entry.connect_changed(move |entry| {
-            let _ = tx.send(entry.text());
+            let _res = tx.send(entry.text());
         });
 
         let mut last_known = self.entry.text().to_string();
@@ -141,7 +127,7 @@ impl BetterSpinButton {
 
                 entry.block_signal(&id);
                 entry.set_text(&*new_value);
-                entry.set_position(new_value.len() as i32);
+                entry.set_position(i32::try_from(new_value.len()).unwrap_or(0));
                 entry.unblock_signal(&id);
 
                 if new_value != last_known {
@@ -150,7 +136,7 @@ impl BetterSpinButton {
                     func();
                 }
             }
-        })
+        });
     }
 
     pub fn set_value(&self, value: u32) {
@@ -172,4 +158,19 @@ fn create_button(icon: &str) -> gtk::Button {
 
 fn format_number(value: u32, padding: usize) -> String {
     format!("{:01$}", value, padding)
+}
+
+fn on_click(
+    entry: &gtk::Entry,
+    func: impl Fn(u32) -> u32 + 'static,
+    padding: u32,
+) -> impl Fn(&gtk::Button) + 'static {
+    glib::clone!(@weak entry => move |_| {
+        if entry.text_length() > 0 {
+            match entry.text().as_str().parse::<u32>() {
+                Ok(value) => entry.set_text(&*format_number(func(value), padding as usize)),
+                Err(_) => entry.set_text(""),
+            }
+        }
+    })
 }

@@ -3,10 +3,10 @@
 
 use super::PopService;
 use super::{Frequency, LocalEvent};
-use crate::config::LocalConfig;
+use crate::config;
 
 pub struct LocalServer {
-    pub config: LocalConfig,
+    pub config: config::Local,
     pub service: PopService<LocalEvent>,
 }
 
@@ -16,8 +16,8 @@ impl LocalServer {
     /// Enable or disable notifications
     async fn notifications_enabled(&mut self, enabled: bool) {
         self.config.enabled = enabled;
-        crate::config::write_session_config(&self.config).await;
-        let _ = self.service.send(LocalEvent::UpdateConfig(self.config.clone())).await;
+        crate::config::write_session(&self.config).await;
+        let _res = self.service.send(LocalEvent::UpdateConfig(self.config.clone())).await;
     }
 
     /// Get the frequency that the notification prompt will show.
@@ -32,8 +32,8 @@ impl LocalServer {
     ) -> zbus::fdo::Result<()> {
         self.config.notification_frequency = frequency;
 
-        crate::config::write_session_config(&self.config).await;
-        let _ = self.service.send(LocalEvent::UpdateConfig(self.config.clone())).await;
+        crate::config::write_session(&self.config).await;
+        let _res = self.service.send(LocalEvent::UpdateConfig(self.config.clone())).await;
 
         Ok(())
     }

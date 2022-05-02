@@ -1,4 +1,4 @@
-use glib::translate::*;
+use glib::translate::FromGlibPtrNone;
 use gtk::prelude::ContainerExt;
 use pop_system_updater_gtk::{localize, SettingsWidget};
 

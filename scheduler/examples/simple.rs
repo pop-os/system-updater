@@ -1,8 +1,9 @@
-use async_cron_scheduler::*;
+use async_cron_scheduler::{Job, Scheduler};
 use chrono::offset::Local;
 use smol::Timer;
 use std::time::Duration;
 
+#[allow(clippy::similar_names)]
 fn main() {
     smol::block_on(async move {
         // Creates a scheduler based on the Local timezone. Note that the `sched_service`

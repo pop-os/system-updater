@@ -30,7 +30,7 @@ pub async fn show_updates() {
                         why
                     );
 
-                    let _ = tokio::process::Command::new("io.elementary.appcenter")
+                    let _res = tokio::process::Command::new("io.elementary.appcenter")
                         .arg("--show-updates")
                         .spawn();
 
@@ -38,13 +38,13 @@ pub async fn show_updates() {
                 }
 
                 // Kill the process if it's running.
-                let _ = tokio::process::Command::new("sh")
+                let _res = tokio::process::Command::new("sh")
                     .args(&["-c", "kill $(pidof io.elementary.appcenter)"])
                     .status()
                     .await;
 
                 // Start a new service process.
-                let _ = tokio::process::Command::new("io.elementary.appcenter")
+                let _res = tokio::process::Command::new("io.elementary.appcenter")
                     .arg("--silent")
                     .spawn();
 

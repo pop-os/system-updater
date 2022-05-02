@@ -3,6 +3,7 @@
 
 use anyhow::Context;
 use as_result::IntoResult;
+use pop_system_updater::dbus::server::{context, Server};
 use tokio::process::Command;
 
 pub async fn async_commands(cmds: &[&[&str]]) -> anyhow::Result<()> {
@@ -63,7 +64,6 @@ pub async fn error_handler(conn: &zbus::Connection, source: &str, error: anyhow:
     }
 
     error!("{}: {}", source, output);
-    use pop_system_updater::dbus::server::{context, Server};
     context(conn, |ctx| async move {
         Server::error(&ctx, source, &output).await
     })

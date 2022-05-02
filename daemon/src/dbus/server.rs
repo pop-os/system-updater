@@ -28,7 +28,7 @@ impl Server {
     }
 
     /// Check if a system update is currently being performed.
-    async fn is_updating(&mut self) -> bool {
+    async fn is_updating(&self) -> bool {
         self.updating.load(Ordering::SeqCst)
     }
 

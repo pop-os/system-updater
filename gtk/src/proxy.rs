@@ -8,13 +8,13 @@ use postage::prelude::*;
 use zbus::Connection;
 
 #[derive(Debug)]
-pub enum ProxyEvent {
+pub enum Event {
     Exit,
     SetNotificationFrequency(Frequency),
     UpdateConfig(Config),
 }
 
-pub fn initialize_service() -> Sender<ProxyEvent> {
+pub fn initialize_service() -> Sender<Event> {
     let (tx, mut rx) = channel(1);
 
     let background_process = async move {
@@ -52,9 +52,9 @@ pub fn initialize_service() -> Sender<ProxyEvent> {
 
         while let Some(event) = rx.recv().await {
             match event {
-                ProxyEvent::Exit => break,
+                Event::Exit => break,
 
-                ProxyEvent::UpdateConfig(config) => {
+                Event::UpdateConfig(config) => {
                     if let Err(why) = proxy.auto_update_set(config.auto_update).await {
                         eprintln!("failed to change auto-update setting: {}", why);
                     }
@@ -79,7 +79,7 @@ pub fn initialize_service() -> Sender<ProxyEvent> {
                     }
                 }
 
-                ProxyEvent::SetNotificationFrequency(frequency) => {
+                Event::SetNotificationFrequency(frequency) => {
                     if let Err(why) = session_proxy.set_notification_frequency(frequency).await {
                         eprintln!("failed to update notification frequency: {:?}", why);
                     }

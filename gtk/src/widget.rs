@@ -4,8 +4,8 @@
 use crate::dialog::Dialog;
 use crate::fl;
 use crate::localize::localizer;
-use crate::proxy::ProxyEvent;
-use crate::utils::*;
+use crate::proxy;
+use crate::utils::{glib_send, glib_spawn, option_container, option_frame, separator_header};
 use gtk::prelude::*;
 use i18n_embed::DesktopLanguageRequester;
 use pop_system_updater::config::{Config, Frequency, Interval};
@@ -13,12 +13,26 @@ use postage::prelude::*;
 use std::cell::Cell;
 use std::rc::Rc;
 
+#[derive(Debug)]
+enum Event {
+    AutomaticUpdatesToggled,
+    ChangeNotificationSchedule,
+    DialogComplete(Config),
+    Exit,
+}
+
+#[allow(clippy::module_name_repetitions)]
 pub struct SettingsWidget {
     pub inner: gtk::Widget,
 }
 
 impl SettingsWidget {
+    /// # Panics
+    ///
+    /// Panics if the tokio runtime fails to be built
     #[allow(clippy::new_without_default)]
+    #[allow(clippy::too_many_lines)]
+    #[must_use]
     pub fn new() -> Self {
         let localizer = localizer();
         let requested_languages = DesktopLanguageRequester::requested_languages();
@@ -28,14 +42,6 @@ impl SettingsWidget {
                 "Error while loading languages for pop-system-updater-gtk {}",
                 error
             );
-        }
-
-        #[derive(Debug)]
-        enum Event {
-            AutomaticUpdatesToggled,
-            ChangeNotificationSchedule,
-            DialogComplete(Config),
-            Exit,
         }
 
         let mut ptx = crate::proxy::initialize_service();
@@ -134,7 +140,7 @@ impl SettingsWidget {
                     let mut ptx = ptx.clone();
                     glib_spawn(async move {
                         let f1 = tx.send(Event::Exit);
-                        let f2 = ptx.send(ProxyEvent::Exit);
+                        let f2 = ptx.send(proxy::Event::Exit);
 
                         let _ = futures::join!(f1, f2);
                     });
@@ -228,8 +234,8 @@ impl SettingsWidget {
             };
 
             let (mut system_config, session_config) = futures::join!(
-                pop_system_updater::config::load_system_config(),
-                pop_system_updater::config::load_session_config()
+                pop_system_updater::config::load_system(),
+                pop_system_updater::config::load_session()
             );
 
             automatic_updates.set_active(system_config.auto_update);
@@ -249,7 +255,7 @@ impl SettingsWidget {
                 match event {
                     Event::ChangeNotificationSchedule => {
                         let _ = ptx
-                            .send(ProxyEvent::SetNotificationFrequency(
+                            .send(proxy::Event::SetNotificationFrequency(
                                 match notification_schedule.active() {
                                     Some(0) => Frequency::Weekly,
                                     Some(1) => Frequency::Daily,
@@ -264,7 +270,7 @@ impl SettingsWidget {
 
                         change_scheduling_sensitivity(&conf);
 
-                        let _ = ptx.send(ProxyEvent::UpdateConfig(conf)).await;
+                        let _ = ptx.send(proxy::Event::UpdateConfig(conf)).await;
                     }
 
                     Event::AutomaticUpdatesToggled => {
@@ -273,7 +279,7 @@ impl SettingsWidget {
                         change_scheduling_sensitivity(&system_config);
 
                         let _ = ptx
-                            .send(ProxyEvent::UpdateConfig(system_config.clone()))
+                            .send(proxy::Event::UpdateConfig(system_config.clone()))
                             .await;
                     }
 

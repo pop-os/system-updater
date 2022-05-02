@@ -2,15 +2,18 @@
 // SPDX-License-Identifier: MPL-2.0
 
 use crate::fl;
+#[allow(clippy::wildcard_imports)]
 use crate::utils::*;
 use gtk::prelude::*;
 use pop_system_updater::config::{Config, Interval, Schedule};
 use postage::prelude::*;
+use std::convert::TryFrom;
 use std::rc::Rc;
 
 pub struct Dialog(pub gtk::Dialog);
 
 impl Dialog {
+    #[allow(clippy::too_many_lines)]
     pub fn new(widget: &gtk::Widget, func: impl Fn(Config) + 'static) -> Self {
         enum Event {
             AutoUpdateChanged,
@@ -136,14 +139,14 @@ impl Dialog {
 
                 let label_ctx = schedule_label.style_context();
 
-                if !insensitive {
-                    label_ctx.remove_class("dim-label");
-                } else {
+                if insensitive {
                     label_ctx.add_class("dim-label");
+                } else {
+                    label_ctx.remove_class("dim-label");
                 }
             };
 
-            let config = pop_system_updater::config::load_system_config().await;
+            let config = pop_system_updater::config::load_system().await;
 
             let schedule = match config.schedule.as_ref() {
                 Some(sched) => sched.clone(),
@@ -167,8 +170,8 @@ impl Dialog {
             };
 
             time_of_day.set_active(Some(am));
-            hour.set_value(hour_value as u32);
-            minute.set_value(schedule.minute as u32);
+            hour.set_value(u32::from(hour_value));
+            minute.set_value(u32::from(schedule.minute));
 
             if config.schedule.is_none() {
                 disable_scheduling(true);
@@ -187,7 +190,7 @@ impl Dialog {
                 move |_| {
                     glib_send(tx.clone(), Event::AutoUpdateChanged);
 
-                    update_config()
+                    update_config();
                 }
             });
 
@@ -222,7 +225,7 @@ impl Dialog {
                     Event::UpdateConfig => {
                         let pm = time_of_day.active() == Some(1);
 
-                        let mut hour = hour.value() as u8;
+                        let mut hour = u8::try_from(hour.value()).unwrap_or(0);
 
                         if hour == 12 {
                             hour = 0;
@@ -253,7 +256,7 @@ impl Dialog {
                                         }
                                     },
                                     hour,
-                                    minute: minute.value() as u8,
+                                    minute: u8::try_from(minute.value()).unwrap_or(0),
                                 })
                             },
                         });

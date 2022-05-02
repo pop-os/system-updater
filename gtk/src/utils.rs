@@ -11,7 +11,7 @@ pub fn glib_spawn<F: Future<Output = ()> + 'static>(future: F) {
 
 pub fn glib_send<E: 'static, S: Sink<Item = E> + Unpin + 'static>(mut sink: S, event: E) {
     glib_spawn(async move {
-        let _ = sink.send(event).await;
+        let _res = sink.send(event).await;
     });
 }
 

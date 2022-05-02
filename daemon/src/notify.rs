@@ -26,10 +26,10 @@ pub fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
 
     notification
         .expect("failed to show desktop notification")
-        .wait_for_action(|action| match action {
-            "default" => func(),
-            "__closed" => (),
-            _ => (),
+        .wait_for_action(|action| {
+            if "default" == action {
+                func();
+            }
         });
 }
 

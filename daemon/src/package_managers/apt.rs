@@ -25,7 +25,7 @@ pub async fn update(conn: zbus::Connection) -> bool {
     if system_update(&mut service_requires_update).await.is_err() {
         if let Ok(release) = os_release::OS_RELEASE.as_ref() {
             if release.name == "Pop!_OS" {
-                let _ = super::apt_pop::regenerate(&release.version_codename).await;
+                let _res = super::apt_pop::regenerate(&release.version_codename).await;
             }
         }
 
@@ -45,7 +45,7 @@ pub async fn update(conn: zbus::Connection) -> bool {
 }
 
 pub async fn repair() -> anyhow::Result<()> {
-    let _ = AptMark::new().hold(["pop-system-updater"]).await;
+    let _res = AptMark::new().hold(["pop-system-updater"]).await;
 
     apt_lock_wait().await;
     let apt_get_result = AptGet::new()
@@ -64,7 +64,7 @@ pub async fn repair() -> anyhow::Result<()> {
         .await
         .context("failed to configure packages with `dpkg --configure -a`");
 
-    let _ = AptMark::new().unhold(["pop-system-updater"]).await;
+    let _res = AptMark::new().unhold(["pop-system-updater"]).await;
 
     apt_get_result.and(dpkg_result)
 }
@@ -104,7 +104,7 @@ pub async fn update_package_lists() {
 }
 
 pub async fn packages_to_fetch() -> anyhow::Result<Vec<String>> {
-    let _ = apt_lock_wait().await;
+    apt_lock_wait().await;
 
     let (mut child, packages) = upgradable_packages()
         .await
@@ -125,7 +125,7 @@ pub async fn packages_to_fetch() -> anyhow::Result<Vec<String>> {
 pub async fn upgrade() -> anyhow::Result<()> {
     apt_lock_wait().await;
 
-    let _ = AptMark::new().hold(["pop-system-updater"]).await;
+    let _res = AptMark::new().hold(["pop-system-updater"]).await;
 
     let mut result = AptGet::new()
         .noninteractive()
@@ -135,7 +135,7 @@ pub async fn upgrade() -> anyhow::Result<()> {
         .await
         .context("failed to install updates");
 
-    let _ = AptMark::new().unhold(["pop-system-updater"]).await;
+    let _res = AptMark::new().unhold(["pop-system-updater"]).await;
 
     if result.is_ok() {
         result = AptGet::new()
