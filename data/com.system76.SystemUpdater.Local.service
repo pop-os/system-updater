@@ -6,6 +6,7 @@ DefaultDependencies=no
 [Service]
 Type=dbus
 BusName=com.system76.SystemUpdater.Local
+Restart=always
 ExecStart=/usr/bin/pop-system-updater
 
 [Install]

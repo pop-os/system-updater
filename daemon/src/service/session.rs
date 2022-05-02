@@ -14,6 +14,12 @@ use tokio::task::JoinHandle;
 use zbus::Connection;
 
 pub async fn run() -> anyhow::Result<()> {
+    if std::env::var("DISPLAY").is_err() {
+        info!("Restarting service in 5s because DISPLAY could not be found");
+        tokio::time::sleep(Duration::from_secs(5)).await;
+        return Ok(());
+    }
+
     let system_connection = Connection::system()
         .await
         .context("could not initiate connection to service")?;
