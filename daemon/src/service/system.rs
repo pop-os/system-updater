@@ -120,15 +120,17 @@ impl Service {
             task.abort();
         }
 
-        if let Some(ref conf) = config.schedule {
-            self.update_job = Some(schedule_job(&mut self.scheduler, conf, sender));
-        } else if config.auto_update {
-            let sender = sender.clone();
-            self.when_available_queue = Some(tokio::task::spawn(async move {
-                info!("scheduling when available in 60 seconds");
-                tokio::time::sleep(Duration::from_secs(60)).await;
-                let _ = sender.send_async(Event::ScheduleWhenAvailable).await;
-            }));
+        if config.auto_update {
+            if let Some(ref conf) = config.schedule {
+                self.update_job = Some(schedule_job(&mut self.scheduler, conf, sender));
+            } else {
+                let sender = sender.clone();
+                self.when_available_queue = Some(tokio::task::spawn(async move {
+                    info!("scheduling when available in 60 seconds");
+                    tokio::time::sleep(Duration::from_secs(60)).await;
+                    let _ = sender.send_async(Event::ScheduleWhenAvailable).await;
+                }));
+            }
         }
     }
 }
