@@ -22,6 +22,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Use `env RUST_LOG=debug` for debug logging.
     tracing_subscriber::fmt()
+        .with_ansi(false)
         .without_time()
         .with_writer(std::io::stderr)
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
