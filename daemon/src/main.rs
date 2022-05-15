@@ -38,9 +38,7 @@ async fn main() -> anyhow::Result<()> {
         } else if accounts::is_desktop_account(effective_uid) {
             crate::service::session::run().await
         } else {
-            Err(anyhow::anyhow!(
-                "service must be launched from either root or a desktop user"
-            ))
+            Ok(())
         }
     };
 
