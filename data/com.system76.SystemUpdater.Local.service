@@ -6,7 +6,7 @@ DefaultDependencies=no
 [Service]
 Type=dbus
 BusName=com.system76.SystemUpdater.Local
-Restart=always
+Restart=on-failure
 ExecStartPre=/bin/sleep 10
 ExecStart=/usr/bin/pop-system-updater
 
