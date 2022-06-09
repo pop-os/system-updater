@@ -56,7 +56,7 @@ run_service:
 
 # Install the compiled project into the system.
 install:
-    install -Dm04755 target/{{target}}/{{binary}} {{target_bin}}
+    install -Dm0755 target/{{target}}/{{binary}} {{target_bin}}
     install -Dm0644 data/{{id}}.conf {{target_dbus_conf}}
     install -Dm0644 data/{{id}}.service {{target_systemd_service}}
     install -Dm0644 data/{{id_local}}.service {{target_session_service}}
