@@ -17,5 +17,5 @@ time-tuesday = Salı
 time-wednesday = Çarşamba
 time-weekdays = Hafta içi
 update-notifications-label = Güncelleme Bildirimlerini Göster
-update-when-available = Mevcut olduğunda Güncelle
-update-when-available-label = Mevcut olduğunda Güncelle
+update-when-available = Müsait olduğunda Güncelle
+update-when-available-label = Müsait olduğunda Güncelle
