@@ -1,0 +1,22 @@
+automatic-updates-label = Automatické Aktualizace
+automatically-install-label = Automaticky Instalovat
+off = Vypnuto
+schedule-daily = Denně
+schedule-dialog-title = Automaticky Instalovat
+schedule-label = Naplánovat Automatické Aktualizace
+schedule-monthly = Měsíčně
+schedule-weekly = Týdně
+time-am = AM
+time-friday = Pátek
+time-monday = Pondělí
+time-pm = PM
+time-saturday = Sobota
+time-sunday = Neděle
+time-thursday = Čtvrtek
+time-tuesday = Úterý
+time-wednesday = Středa
+time-weekdays = Kromě víkendu
+update-notifications-label = Zobrazovat Oznámení o Aktualizacích
+update-when-available = Aktualizovat pokud k dipozici
+update-when-available-label = Aktualizovat pokud k dizpozici
+
