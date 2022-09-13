@@ -2,6 +2,7 @@
 After=network-online.target
 Description=Distribution updater
 DefaultDependencies=no
+StartLimitIntervalSec=4h
 
 [Service]
 Type=dbus
@@ -10,7 +11,7 @@ ExecStart=/usr/bin/pop-system-updater
 Restart=on-failure
 KillMode=process
 SendSIGKILL=no
+StartLimitBurst=1
 
 [Install]
-WantedBy=multi-user.target
 Alias=pop-system-updater.service
