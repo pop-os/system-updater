@@ -2,6 +2,7 @@
 Description=Local session service for the Pop System Updater
 After=network-online.target
 DefaultDependencies=no
+StartLimitIntervalSec=1d
 
 [Service]
 Type=dbus
@@ -9,7 +10,6 @@ BusName=com.system76.SystemUpdater.Local
 Restart=on-failure
 ExecStartPre=/bin/sleep 10
 ExecStart=/usr/bin/pop-system-updater
-StartLimitIntervalSec=1d
 StartLimitBurst=1
 
 [Install]
