@@ -14,7 +14,7 @@ name = "pop_system_updater_gtk"
 crate-type = [ "cdylib" ]
 
 [dependencies]
-glib = "0.15.11"
-gtk = "0.15.5"
-gtk-sys = "0.15.3"
+glib = "0.16.2"
+gtk = "0.16.0"
+gtk-sys = "0.16.0"
 pop-system-updater-gtk = { path = "../gtk" }

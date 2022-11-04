@@ -6,4 +6,4 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-zbus = { version = "2.2.0", default-features = false }
+zbus = { version = "3.4.0", default-features = false }
