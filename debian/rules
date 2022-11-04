@@ -1,5 +1,6 @@
 #!/usr/bin/make -f
 
+export CARGO_TARGET_DIR=target
 DESTDIR=debian/tmp
 CLEAN ?= 1
 DEBUG ?= 0
