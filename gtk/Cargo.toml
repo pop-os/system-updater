@@ -7,26 +7,26 @@ license = "MPL-2.0"
 publish = false
 
 [dependencies]
-cascade = "1.0.0"
-chrono = { version = "0.4.19", features = ["serde"] }
-flume = "0.10.12"
-futures = "0.3.21"
-gio = "0.15.11"
-glib = "0.15.11"
-gtk = "0.15.5"
+cascade = "1.0.1"
+chrono = { version = "0.4.22", features = ["serde"] }
+flume = "0.10.14"
+futures = "0.3.25"
+gio = "0.16.2"
+glib = "0.16.2"
+gtk = "0.16.0"
 i18n-embed = { version = "0.13.4", features = ["fluent-system", "desktop-requester"] }
 i18n-embed-fl = "0.6.4"
-once_cell = "1.10.0"
+once_cell = "1.16.0"
 pop-system-updater = { path = "../daemon" }
 postage = "0.5.0"
-ron = "0.7.0"
-rust-embed = "6.4.0"
-tracing = "0.1.34"
-tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
-zbus = { version = "2.2.0", default-features = false, features = ["tokio"] }
+ron = "0.8.0"
+rust-embed = "6.4.2"
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+zbus = { version = "3.4.0", default-features = false, features = ["tokio"] }
 
 [dependencies.tokio]
-version = "1.18.1"
+version = "1.21.2"
 features = ["rt", "macros"]
 
 [features]
