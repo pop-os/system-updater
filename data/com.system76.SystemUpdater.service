@@ -11,7 +11,7 @@ ExecStart=/usr/bin/pop-system-updater
 Restart=on-failure
 KillMode=process
 SendSIGKILL=no
-StartLimitBurst=1
+StartLimitBurst=3
 
 [Install]
 Alias=pop-system-updater.service

@@ -10,7 +10,7 @@ BusName=com.system76.SystemUpdater.Local
 Restart=on-failure
 ExecStartPre=/bin/sleep 10
 ExecStart=/usr/bin/pop-system-updater
-StartLimitBurst=3
+StartLimitBurst=6
 
 [Install]
 Alias=pop-system-updater-local.service
