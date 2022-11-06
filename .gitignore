@@ -3,7 +3,7 @@ debian/*
 !debian/*postinst
 !debian/changelog
 !debian/control
-!debian/links
+!debian/*.links
 !debian/rules
 !debian/source
 .cargo

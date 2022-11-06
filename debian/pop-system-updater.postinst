@@ -10,7 +10,6 @@ if systemctl is-active "${SERVICE}"; then
 fi
 
 systemctl enable --now "${SERVICE}"
-systemctl --global enable "${SESSION}"
 
 #DEBHELPER#
 
