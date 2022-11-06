@@ -1,15 +1,14 @@
 #!/bin/sh
 
 SERVICE="com.system76.SystemUpdater"
-SESSION="${SERVICE}.Local"
 
 systemctl daemon-reload
+
+systemctl --root=/ enable "${SERVICE}"
 
 if systemctl is-active "${SERVICE}"; then
     systemctl restart "${SERVICE}"
 fi
-
-systemctl enable --now "${SERVICE}"
 
 #DEBHELPER#
 
