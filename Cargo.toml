@@ -1,2 +1,5 @@
 [workspace]
 members = ["daemon", "gtk", "gtk-ffi", "scheduler", "shop-zbus"]
+
+[profile.release]
+lto = "fat"
