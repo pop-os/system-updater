@@ -1,14 +1,11 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
+use crate::daemon::{IFACE_LOCAL, LocalEvent, PopService, local_server::LocalServer};
 use anyhow::Context;
 use config::{Frequency, Local, LocalCache};
 use flume::Sender;
-use pop_system_updater::config;
-use pop_system_updater::dbus::PopService;
-use pop_system_updater::dbus::{
-    client::ClientProxy, local_server::LocalServer, LocalEvent, IFACE_LOCAL,
-};
+use pop_system_updater_zbus::{client::ClientProxy, config};
 use std::time::{Duration, SystemTime};
 use tokio::task::JoinHandle;
 use zbus::Connection;
@@ -116,7 +113,7 @@ impl State {
         ));
 
         self.cache.last_update = now;
-        let f1 = config::write_session_cache(&self.cache);
+        let f1 = crate::daemon::config::write_session_cache(&self.cache);
         let f2 = async {
             if crate::package_managers::updates_are_available().await {
                 info!("displaying notification of available updates");

@@ -13,7 +13,7 @@ pub type Command = Box<dyn Fn(JobId) + Send + Sync>;
 
 /// Messages going into the scheduler service.
 enum SchedMessage<Tz: TimeZoneExt> {
-    Insert(JobId, Job<Tz>, Command),
+    Insert(JobId, Box<Job<Tz>>, Command),
     Remove(JobId),
 }
 
@@ -64,7 +64,7 @@ where
         let id = JobId(self.jobs.insert(()));
         let _result = self
             .sender
-            .send(SchedMessage::Insert(id, job, Box::new(command)));
+            .send(SchedMessage::Insert(id, Box::new(job), Box::new(command)));
         id
     }
 
@@ -153,7 +153,7 @@ where
     }
 }
 struct SchedulerModel<Tz: TimeZoneExt> {
-    tasks: SecondaryMap<DefaultKey, (Job<Tz>, Command)>,
+    tasks: SecondaryMap<DefaultKey, (Box<Job<Tz>>, Command)>,
     next: Option<(DefaultKey, Duration)>,
 }
 
@@ -190,15 +190,15 @@ impl<Tz: TimeZoneExt> SchedulerModel<Tz> {
 
             if let Some((id, date)) = next {
                 let seconds_until = date.signed_duration_since(Tz::now()).num_seconds();
-                if let Ok(seconds_until) = u64::try_from(seconds_until) {
-                    if seconds_until > 0 {
-                        #[cfg(feature = "logging")]
-                        tracing::info!("next job in {} seconds", seconds_until);
+                if let Ok(seconds_until) = u64::try_from(seconds_until)
+                    && seconds_until > 0
+                {
+                    #[cfg(feature = "logging")]
+                    tracing::info!("next job in {} seconds", seconds_until);
 
-                        let duration = Duration::from_secs(seconds_until as u64);
-                        self.next = Some((id, duration));
-                        return;
-                    }
+                    let duration = Duration::from_secs(seconds_until);
+                    self.next = Some((id, duration));
+                    return;
                 }
 
                 self.call(id);

@@ -1,33 +1,15 @@
 #!/usr/bin/make -f
 
-export CARGO_TARGET_DIR=target
 DESTDIR=debian/tmp
-CLEAN ?= 1
-DEBUG ?= 0
-VENDOR ?= 1
 
 %:
 	dh $@
 
 override_dh_auto_clean:
-	if test "${CLEAN}" = "1"; then \
-		cargo clean; \
-	fi
-
-	if ! ischroot && test "${VENDOR}" = "1"; then \
-		mkdir -p .cargo; \
-		cargo vendor --sync gtk/Cargo.toml | head -n -1 > .cargo/config; \
-		echo 'directory = "vendor"' >> .cargo/config; \
-		tar pcf vendor.tar vendor; \
-		rm -rf vendor; \
-	fi
+	ischroot || (just clean-dist && just vendor)
 
 override_dh_auto_build:
-	just rootdir=$(DESTDIR) debug=$(DEBUG) vendor=$(VENDOR) package_build
+	test -e vendor.tar && just build-vendored || just build-release
 
 override_dh_auto_install:
 	just rootdir=$(DESTDIR) install
-
-override_dh_systemd_enable:
-
-override_dh_systemd_start:

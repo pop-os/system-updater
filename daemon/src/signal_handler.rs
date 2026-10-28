@@ -52,6 +52,7 @@ pub fn init() {
         PENDING.store(signal as u8, Ordering::SeqCst);
     }
 
+    #[allow(function_casts_as_integer)]
     let handler = handler as libc::sighandler_t;
 
     unsafe {

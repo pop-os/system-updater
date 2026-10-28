@@ -2,21 +2,19 @@
 // SPDX-License-Identifier: MPL-2.0
 
 use super::{Event, PopService};
-use crate::config::Schedule;
-use std::future::Future;
+use pop_system_updater_zbus::Schedule;
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
     Arc,
+    atomic::{AtomicBool, Ordering},
 };
-use zbus::SignalContext;
+use zbus::object_server::SignalEmitter;
 
 pub struct Server {
     pub updating: Arc<AtomicBool>,
     pub service: PopService<Event>,
 }
 
-#[rustfmt::skip]
-#[dbus_interface(name = "com.system76.SystemUpdater")]
+#[zbus::interface(name = "com.system76.SystemUpdater")]
 impl Server {
     async fn auto_update_set(&mut self, enable: bool) -> zbus::fdo::Result<()> {
         self.service.send(Event::SetAutoUpdate(enable)).await
@@ -53,34 +51,25 @@ impl Server {
         Ok(())
     }
 
-    #[dbus_interface(signal)]
-    pub async fn error(ctx: &SignalContext<'_>, source: &str, why: &str) -> zbus::Result<()>;
+    #[zbus(signal)]
+    pub async fn error(emitter: &SignalEmitter<'_>, source: &str, why: &str) -> zbus::Result<()>;
 
-    #[dbus_interface(signal)]
-    pub async fn progress(ctx: &SignalContext<'_>, source: &str, percent: u8) -> zbus::Result<()>;
+    #[zbus(signal)]
+    pub async fn progress(
+        emitter: &SignalEmitter<'_>,
+        source: &str,
+        percent: u8,
+    ) -> zbus::Result<()>;
 
-    #[dbus_interface(signal)]
-    pub async fn repair_err(ctx: &SignalContext<'_>, why: &str) -> zbus::Result<()>;
+    #[zbus(signal)]
+    pub async fn repair_err(emitter: &SignalEmitter<'_>, why: &str) -> zbus::Result<()>;
 
-    #[dbus_interface(signal)]
-    pub async fn repair_ok(ctx: &SignalContext<'_>) -> zbus::Result<()>;
+    #[zbus(signal)]
+    pub async fn repair_ok(emitter: &SignalEmitter<'_>) -> zbus::Result<()>;
 
-    #[dbus_interface(signal)]
-    pub async fn updates_available(ctx: &SignalContext<'_>, available: bool) -> zbus::Result<()>;
-}
-
-pub async fn context<'a, C, F>(conn: &zbus::Connection, future: C)
-where
-    C: FnOnce(SignalContext<'static>) -> F + 'a,
-    F: Future<Output = zbus::Result<()>> + 'a,
-{
-    if let Ok(iface) = conn
-        .object_server()
-        .interface::<_, Server>(super::IFACE)
-        .await
-    {
-        if let Err(why) = future(iface.signal_context().to_owned()).await {
-            error!("context failed with {:?}", why);
-        }
-    }
+    #[zbus(signal)]
+    pub async fn updates_available(
+        emitter: &SignalEmitter<'_>,
+        available: bool,
+    ) -> zbus::Result<()>;
 }

@@ -1,0 +1,13 @@
+[package]
+name = "pop-system-updater-zbus"
+version = "0.1.0"
+edition = "2024"
+rust-version.workspace = true
+
+[dependencies]
+ron = "0.12.3"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_repr = "0.1.21"
+tokio = { version = "1.54.1", features = ["fs"] }
+tracing = "0.1.44"
+zbus = "6.1.0"

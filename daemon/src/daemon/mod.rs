@@ -1,12 +1,11 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
-pub mod client;
-pub mod local_client;
+pub mod config;
 pub mod local_server;
 pub mod server;
 
-use crate::config::{Frequency, Local, Schedule};
+use pop_system_updater_zbus::{Frequency, Local, Schedule};
 
 // Where this service's interface is being served at.
 pub const IFACE: &str = "/com/system76/SystemUpdater";

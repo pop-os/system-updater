@@ -1,22 +1,20 @@
-// Copyright 2021-2022 System76 <info@system76.com>
+// Copyright 2021 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::path::{Path, PathBuf};
-use zvariant::Type;
 
-pub const SYSTEM_CACHE: &str = "/var/cache/pop-system-updater/cache.ron";
 pub const SYSTEM_PATH: &str = "/etc/pop-system-updater/config.ron";
 pub const LOCAL_CACHE: &str = ".cache/pop-system-updater/cache.ron";
 pub const LOCAL_PATH: &str = ".config/pop-system-updater/config.ron";
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize, Type)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, zbus::Type)]
 pub struct Cache {
     pub last_update: u64,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize, Type)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, zbus::Type)]
 pub struct LocalCache {
     pub last_update: u64,
 }
@@ -50,7 +48,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Type)]
+#[derive(Clone, Debug, Deserialize, Serialize, zbus::Type)]
 pub struct Local {
     pub enabled: bool,
     pub notification_frequency: Frequency,
@@ -65,7 +63,7 @@ impl Default for Local {
     }
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, Type)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, zbus::Type)]
 #[repr(u32)]
 pub enum Frequency {
     Weekly = 0,
@@ -73,7 +71,7 @@ pub enum Frequency {
     Monthly = 2,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Type)]
+#[derive(Clone, Debug, Deserialize, Serialize, zbus::Type)]
 pub struct Schedule {
     pub interval: Interval,
     pub hour: u8,
@@ -81,7 +79,7 @@ pub struct Schedule {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, Deserialize_repr, Serialize_repr, Type)]
+#[derive(Copy, Clone, Debug, Deserialize_repr, Serialize_repr, zbus::Type)]
 pub enum Interval {
     Monday = 1,
     Tuesday = 1 << 1,
@@ -105,70 +103,25 @@ pub async fn load_system() -> Config {
     load(Path::new(SYSTEM_PATH)).await
 }
 
-pub async fn load_system_cache() -> Cache {
-    load(Path::new(SYSTEM_CACHE)).await
-}
-
-pub async fn write_session(config: &Local) {
-    write(&session_path(), config).await;
-}
-
-pub async fn write_session_cache(cache: &LocalCache) {
-    write(&session_cache_path(), cache).await;
-}
-
-pub async fn write_system(config: &Config) {
-    write(Path::new(SYSTEM_PATH), config).await;
-}
-
-pub async fn write_system_cache(cache: &Cache) {
-    write(Path::new(SYSTEM_CACHE), cache).await;
-}
-
 async fn load<T: Default + DeserializeOwned + Serialize>(path: &Path) -> T {
-    info!("loading config: {:?}", path);
     let file;
     if let Ok(file_) = tokio::fs::read_to_string(path).await {
         file = file_;
         match ron::from_str::<T>(&file) {
             Ok(config) => return config,
             Err(why) => {
-                error!("failed to read config: {}", why);
+                tracing::error!("failed to read config: {}", why);
             }
         }
     }
 
-    let config = T::default();
-    write(path, &config).await;
-    config
+    T::default()
 }
 
-async fn write<T: Serialize>(path: &Path, config: &T) {
-    info!("writing config: {:?}", path);
-
-    if let Some(parent) = path.parent() {
-        let _res = tokio::fs::create_dir(parent).await;
-    }
-
-    let config = match ron::to_string(config) {
-        Ok(config) => config,
-        Err(why) => {
-            error!("failed to serialize config: {}", why);
-            return;
-        }
-    };
-
-    if let Err(why) = tokio::fs::write(path, config.as_bytes()).await {
-        error!("failed to write config file: {}", why);
-    }
-}
-
-fn session_path() -> PathBuf {
-    #[allow(deprecated)]
+pub fn session_path() -> PathBuf {
     std::env::home_dir().expect("NO HOME").join(LOCAL_PATH)
 }
 
-fn session_cache_path() -> PathBuf {
-    #[allow(deprecated)]
+pub fn session_cache_path() -> PathBuf {
     std::env::home_dir().expect("NO HOME").join(LOCAL_CACHE)
 }

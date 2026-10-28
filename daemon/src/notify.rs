@@ -38,7 +38,7 @@ pub fn updates_available() {
         "System updates are available to install",
         "Click here to view available updates",
         || {
-            tokio::spawn(pop_system_updater::appcenter::show_updates());
+            tokio::spawn(async move { std::process::Command::new("cosmic-store") });
         },
     );
 }
