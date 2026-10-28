@@ -10,8 +10,9 @@ use futures::StreamExt;
 use std::pin::Pin;
 use std::process::Stdio;
 use tokio::process::{Child, Command};
+use zbus::object_server::SignalEmitter;
 
-pub async fn update(conn: zbus::Connection) -> bool {
+pub async fn update(emitter: &SignalEmitter<'_>) -> bool {
     const SOURCE: &str = "apt";
 
     if !utils::command_exists(SOURCE) {
@@ -23,16 +24,16 @@ pub async fn update(conn: zbus::Connection) -> bool {
     let mut service_requires_update = false;
 
     if system_update(&mut service_requires_update).await.is_err() {
-        if let Ok(release) = os_release::OS_RELEASE.as_ref() {
-            if release.name == "Pop!_OS" {
-                let _res = super::apt_pop::regenerate(&release.version_codename).await;
-            }
+        if let Ok(release) = os_release::OS_RELEASE.as_ref()
+            && release.name == "Pop!_OS"
+        {
+            let _res = super::apt_pop::regenerate(&release.version_codename).await;
         }
 
         let mut count = 0;
         while let Err(why) = repair().await {
             if count == 2 {
-                utils::error_handler(&conn, SOURCE, why).await;
+                utils::error_handler(emitter, SOURCE, why).await;
                 return false;
             }
 
@@ -155,7 +156,7 @@ pub type Packages = Pin<Box<dyn Stream<Item = String> + Send>>;
 // Fetch all upgradeable debian packages from system apt repositories.
 pub async fn upgradable_packages() -> anyhow::Result<(Child, Packages)> {
     let mut child = Command::new("apt-get")
-        .args(&["full-upgrade", "--dry-run"])
+        .args(["full-upgrade", "--dry-run"])
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()
@@ -174,11 +175,10 @@ pub async fn upgradable_packages() -> anyhow::Result<(Child, Packages)> {
             }
 
             let mut words = buffer.split_ascii_whitespace();
-            if let Some("Inst") = words.next() {
-                if let Some(package) = words.next() {
+            if let Some("Inst") = words.next()
+                && let Some(package) = words.next() {
                     yield package.into();
                 }
-            }
 
             buffer.clear();
         }

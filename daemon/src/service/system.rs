@@ -1,24 +1,22 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
+use crate::daemon::PopService;
+use crate::daemon::{Event, IFACE, server::Server};
 use anyhow::Context;
 use async_cron_scheduler::{Job, JobId, Scheduler};
 use chrono::Local;
 use config::{Interval, Schedule};
 use flume::Sender;
 use futures::StreamExt;
-use pop_system_updater::config::{self, Config};
-use pop_system_updater::dbus::PopService;
-use pop_system_updater::dbus::{
-    server::{self, Server},
-    Event, IFACE,
-};
+use pop_system_updater_zbus::config::{self, Config};
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tokio::task::JoinHandle;
 use zbus::Connection;
+use zbus::object_server::SignalEmitter;
 
 pub struct Service {
     updating: Arc<AtomicBool>,
@@ -29,7 +27,7 @@ pub struct Service {
 }
 
 impl Service {
-    async fn auto_update(&mut self, connection: &zbus::Connection, sender: Sender<Event>) {
+    async fn auto_update(&mut self, emitter: SignalEmitter<'static>, sender: Sender<Event>) {
         if self.update_task.is_some() {
             info!("already performing an update");
             return;
@@ -38,16 +36,15 @@ impl Service {
         info!("system update initiated");
         self.updating.store(true, Ordering::SeqCst);
 
-        let connection = connection.clone();
         let updating = self.updating.clone();
 
         self.update_task = Some(tokio::task::spawn(async move {
             let _ = futures::join!(
-                crate::package_managers::apt::update(connection.clone()),
-                crate::package_managers::flatpak::update(connection.clone()),
-                crate::package_managers::fwupd::update(connection.clone()),
-                crate::package_managers::nix::update(&connection),
-                crate::package_managers::snap::update(connection.clone())
+                crate::package_managers::apt::update(&emitter),
+                crate::package_managers::flatpak::update(&emitter),
+                crate::package_managers::fwupd::update(&emitter),
+                crate::package_managers::nix::update(&emitter),
+                crate::package_managers::snap::update(&emitter)
             );
 
             updating.store(false, Ordering::SeqCst);
@@ -68,7 +65,7 @@ impl Service {
         info!("check for system updates complete");
     }
 
-    async fn repair(&self, connection: &zbus::Connection) {
+    async fn repair(&self, emitter: &SignalEmitter<'_>) {
         if self.update_task.is_some() {
             info!("already performing an update");
             return;
@@ -78,14 +75,10 @@ impl Service {
 
         let result = crate::package_managers::apt::repair().await;
 
-        let response = |ctx| async move {
-            match result {
-                Ok(()) => Server::repair_ok(&ctx).await,
-                Err(why) => Server::repair_err(&ctx, &why.to_string()).await,
-            }
+        _ = match result {
+            Ok(()) => Server::repair_ok(emitter).await,
+            Err(why) => Server::repair_err(emitter, &why.to_string()).await,
         };
-
-        server::context(connection, response).await;
 
         info!("system repair attempt complete");
     }
@@ -102,13 +95,12 @@ impl Service {
         self.update_job = Some(auto_job(&mut self.scheduler, sender));
     }
 
-    async fn update_notification(&self, connection: &zbus::Connection) {
-        let response = |ctx| async move {
-            Server::updates_available(&ctx, crate::package_managers::updates_are_available().await)
-                .await
-        };
-
-        server::context(connection, response).await;
+    async fn update_notification(&self, emitter: &SignalEmitter<'_>) {
+        _ = Server::updates_available(
+            emitter,
+            crate::package_managers::updates_are_available().await,
+        )
+        .await;
     }
 
     fn update_scheduler(&mut self, config: &Config, sender: &Sender<Event>) {
@@ -222,14 +214,38 @@ pub async fn run() -> anyhow::Result<()> {
                 match event {
                     Event::CheckForUpdates => {
                         service.check_for_updates().await;
-                        service.update_notification(&connection).await;
+                        if let Ok(iface) = connection
+                            .object_server()
+                            .interface::<_, Server>(crate::daemon::IFACE)
+                            .await
+                        {
+                            service.update_notification(iface.signal_emitter()).await;
+                        }
                     }
 
-                    Event::Repair => service.repair(&connection).await,
+                    Event::Repair => {
+                        if let Ok(iface) = connection
+                            .object_server()
+                            .interface::<_, Server>(crate::daemon::IFACE)
+                            .await
+                        {
+                            service.repair(iface.signal_emitter()).await;
+                        }
+                    }
 
                     Event::ScheduleWhenAvailable => service.schedule_when_available(&sender),
 
-                    Event::Update => service.auto_update(&connection, sender.clone()).await,
+                    Event::Update => {
+                        if let Ok(iface) = connection
+                            .object_server()
+                            .interface::<_, Server>(crate::daemon::IFACE)
+                            .await
+                        {
+                            service
+                                .auto_update(iface.signal_emitter().clone(), sender.clone())
+                                .await;
+                        }
+                    }
 
                     Event::UpdateComplete => service.update_task = None,
 
@@ -242,7 +258,7 @@ pub async fn run() -> anyhow::Result<()> {
 
                         let config = config.clone();
                         tokio::spawn(async move {
-                            config::write_system(&config).await;
+                            crate::daemon::config::write_system(&config).await;
                             info!("system configuration file updated");
                         });
                     }
@@ -256,7 +272,7 @@ pub async fn run() -> anyhow::Result<()> {
 
                         let config = config.clone();
                         tokio::spawn(async move {
-                            config::write_system(&config).await;
+                            crate::daemon::config::write_system(&config).await;
                             info!("system configuration file updated");
                         });
                     }
@@ -327,7 +343,7 @@ fn schedule_job(
 ) -> JobId {
     info!("scheduling for {:?}", schedule);
     let sender = sender.clone();
-    scheduler.insert(Job::cron(&*cron_expression(schedule)).unwrap(), move |_| {
+    scheduler.insert(Job::cron(&cron_expression(schedule)).unwrap(), move |_| {
         let sender = sender.clone();
         tokio::spawn(async move {
             let _ = sender.send_async(Event::Update).await;

@@ -7,7 +7,9 @@ pub mod flatpak;
 pub mod nix;
 
 pub mod fwupd {
-    pub async fn update(conn: zbus::Connection) {
+    use zbus::object_server::SignalEmitter;
+
+    pub async fn update(emitter: &SignalEmitter<'_>) {
         use crate::utils;
 
         const SOURCE: &str = "fwupdmgr";
@@ -17,13 +19,15 @@ pub mod fwupd {
         }
 
         if let Err(why) = utils::async_command(&[SOURCE, "refresh", "--force"]).await {
-            utils::error_handler(&conn, SOURCE, why).await;
+            utils::error_handler(emitter, SOURCE, why).await;
         }
     }
 }
 
 pub mod snap {
-    pub async fn update(conn: zbus::Connection) {
+    use zbus::object_server::SignalEmitter;
+
+    pub async fn update(emitter: &SignalEmitter<'_>) {
         use crate::utils;
 
         const SOURCE: &str = "snap";
@@ -35,7 +39,7 @@ pub mod snap {
         }
 
         if let Err(why) = utils::async_command(&[SOURCE, "refresh"]).await {
-            utils::error_handler(&conn, SOURCE, why).await;
+            utils::error_handler(emitter, SOURCE, why).await;
         }
 
         info!("{}: updated software for system", SOURCE);

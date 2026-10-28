@@ -4,14 +4,12 @@ Priority: optional
 Maintainer: Michael Aaron Murphy <mmstick@pm.me>
 Build-Depends:
     cargo,
-    just,
+    just (>= 1.42.4),
     rustc,
-    libdbus-1-dev,
-    libgtk-3-dev,
     libssl-dev,
     pkg-config,
-    debhelper-compat (= 10),
-Standards-Version: 4.1.1
+    debhelper-compat (= 13),
+Standards-Version: 4.6.2
 Homepage: https://github.com/pop-os/system-updater
 
 Package: pop-system-updater
@@ -22,19 +20,3 @@ Depends:
   ${misc:Depends},
   ${shlibs:Depends}
 Description: Automatic System Updates for Pop!_OS
-
-Package: libpop-system-updater-gtk
-Architecture: amd64 arm64
-Depends:
-  libgtk-3-0
-  ${misc:Depends},
-  ${shlibs:Depends}
-Description: GTK widget library for dynamic linking
-
-Package: libpop-system-updater-gtk-dev
-Architecture: amd64 arm64
-Depends:
-  libpop-system-updater-gtk,
-  ${misc:Depends},
-  ${shlibs:Depends}
-Description: Development libraries for libpop-system-updater-gtk
