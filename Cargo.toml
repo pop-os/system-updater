@@ -1,2 +1,6 @@
 [workspace]
-members = ["daemon", "gtk", "gtk-ffi", "scheduler", "shop-zbus"]
+resolver = "3"
+members = ["client", "daemon", "scheduler"]
+
+[workspace.package]
+rust-version = "1.93.0"

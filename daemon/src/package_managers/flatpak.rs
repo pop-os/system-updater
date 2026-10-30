@@ -4,8 +4,9 @@
 use crate::utils;
 use futures::StreamExt;
 use std::path::Path;
+use zbus::object_server::SignalEmitter;
 
-pub async fn update(conn: zbus::Connection) {
+pub async fn update(emitter: &SignalEmitter<'_>) {
     const SOURCE: &str = "flatpak";
 
     if !utils::command_exists(SOURCE) {
@@ -18,10 +19,10 @@ pub async fn update(conn: zbus::Connection) {
         let prune = &[SOURCE, "remove", "--unused", "--noninteractive"];
         let repair = &[SOURCE, "repair"];
 
-        if utils::async_commands(&[refresh, prune]).await.is_err() {
-            if let Err(why) = utils::async_commands(&[repair, refresh, prune]).await {
-                utils::error_handler(&conn, SOURCE, why).await;
-            }
+        if utils::async_commands(&[refresh, prune]).await.is_err()
+            && let Err(why) = utils::async_commands(&[repair, refresh, prune]).await
+        {
+            utils::error_handler(emitter, SOURCE, why).await;
         }
         info!("{}: updated software for system", SOURCE);
     };
@@ -59,10 +60,10 @@ pub async fn update(conn: zbus::Connection) {
 
                 let repair = &["runuser", "-u", &user, "--", SOURCE, "repair", "--user"];
 
-                if utils::async_commands(&[refresh, prune]).await.is_err() {
-                    if let Err(why) = utils::async_commands(&[repair, refresh, prune]).await {
-                        utils::error_handler(&conn, SOURCE, why).await;
-                    }
+                if utils::async_commands(&[refresh, prune]).await.is_err()
+                    && let Err(why) = utils::async_commands(&[repair, refresh, prune]).await
+                {
+                    utils::error_handler(emitter, SOURCE, why).await;
                 }
 
                 info!("{}: updated software for {}", SOURCE, user);

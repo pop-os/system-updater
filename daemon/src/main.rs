@@ -5,6 +5,7 @@
 extern crate tracing;
 
 mod accounts;
+mod daemon;
 mod notify;
 mod package_managers;
 mod service;
@@ -15,11 +16,6 @@ use anyhow::Context;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    std::env::set_var("LANG", "C");
-    if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "info");
-    }
-
     // Use `env RUST_LOG=debug` for debug logging.
     tracing_subscriber::fmt()
         .with_ansi(false)
@@ -27,9 +23,6 @@ async fn main() -> anyhow::Result<()> {
         .with_writer(std::io::stderr)
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
-
-    // Colorful and useful error messages in unlikely event that the service crashes.
-    better_panic::install();
 
     // If root then system service, else local session service.
     let main_future = async move {

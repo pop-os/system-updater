@@ -1,9 +1,11 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
+use zbus::object_server::SignalEmitter;
+
 use crate::utils;
 
-pub async fn update(conn: &zbus::Connection) {
+pub async fn update(emitter: &SignalEmitter<'_>) {
     const SOURCE: &str = "nix";
 
     const COMMANDS: &[&[&str]] = &[
@@ -19,6 +21,6 @@ pub async fn update(conn: &zbus::Connection) {
     }
 
     if let Err(why) = utils::async_commands(COMMANDS).await {
-        utils::error_handler(conn, SOURCE, why).await;
+        utils::error_handler(emitter, SOURCE, why).await;
     }
 }

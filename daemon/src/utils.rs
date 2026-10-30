@@ -1,10 +1,11 @@
 // Copyright 2021-2022 System76 <info@system76.com>
 // SPDX-License-Identifier: MPL-2.0
 
+use crate::daemon::server::Server;
 use anyhow::Context;
 use as_result::IntoResult;
-use pop_system_updater::dbus::server::{context, Server};
 use tokio::process::Command;
+use zbus::object_server::SignalEmitter;
 
 pub async fn async_commands(cmds: &[&[&str]]) -> anyhow::Result<()> {
     for command in cmds {
@@ -38,7 +39,7 @@ pub async fn async_command(args: &[&str]) -> anyhow::Result<()> {
 pub fn command_exists(cmd: &str) -> bool {
     if let Ok(path) = std::env::var("PATH") {
         for location in path.split(':') {
-            if std::fs::metadata(&[location, "/", cmd].concat()).is_ok() {
+            if std::fs::metadata([location, "/", cmd].concat()).is_ok() {
                 return true;
             }
         }
@@ -47,7 +48,7 @@ pub fn command_exists(cmd: &str) -> bool {
     false
 }
 
-pub async fn error_handler(conn: &zbus::Connection, source: &str, error: anyhow::Error) {
+pub async fn error_handler(emitter: &SignalEmitter<'_>, source: &str, error: anyhow::Error) {
     use std::fmt::Write;
 
     let mut output = String::new();
@@ -64,8 +65,5 @@ pub async fn error_handler(conn: &zbus::Connection, source: &str, error: anyhow:
     }
 
     error!("{}: {}", source, output);
-    context(conn, |ctx| async move {
-        Server::error(&ctx, source, &output).await
-    })
-    .await;
+    _ = Server::error(emitter, source, &output).await;
 }

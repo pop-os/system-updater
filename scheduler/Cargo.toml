@@ -2,23 +2,23 @@
 name = "async-cron-scheduler"
 description = "Simple lightweight efficient runtime-agnostic async task scheduler with cron expression support"
 repository = "https://github.com/pop-os/system-updater"
-version = "1.0.0"
+version = "1.0.1"
 license = "MPL-2.0"
 authors = ["Michael Aaron Murphy <mmstick@pm.me>"]
-categories = [ "asynchronous", "date-and-time" ]
+categories = ["asynchronous", "date-and-time"]
 keywords = ["cron", "job", "scheduler", "tokio", "smol"]
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-chrono = "0.4.22"
-cron = "0.12.0"
-flume = "0.10.14"
-slotmap = "1.0.6"
-futures = "0.3.25"
-tracing = { version = "0.1.37", optional = true }
+chrono = "0.4.45"
+cron = "0.17.0"
+flume = "0.12.0"
+slotmap = "1.1.1"
+futures = "0.3.34"
+tracing = { version = "0.1.44", optional = true }
 
 [features]
 logging = ["tracing"]
 
 [dev-dependencies]
-smol = "1.2.5"
+smol = "2.0.2"
