@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use notify_rust::{Hint, Notification, Urgency};
+use notify_rust::{Hint, Notification, Timeout, Urgency};
 
 pub fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
     let show_notification = || {
@@ -12,7 +12,9 @@ pub fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
             .summary(summary)
             .body(body)
             .action("default", "default")
-            .hint(Hint::Urgency(Urgency::Critical))
+            .hint(Hint::Urgency(Urgency::Normal))
+            .hint(Hint::Resident(true))
+            .timeout(Timeout::Never)
             .show()
     };
 
@@ -26,10 +28,10 @@ pub fn notify<F: FnOnce()>(summary: &str, body: &str, func: F) {
 
     notification
         .expect("failed to show desktop notification")
-        .wait_for_action(|action| {
-            if "default" == action {
-                func();
-            }
+        .wait_for_action(|action| match action {
+            "default" | "clicked" => func(),
+            "__closed" => eprintln!("dismissed update notification"),
+            _ => (),
         });
 }
 
@@ -38,7 +40,10 @@ pub fn updates_available() {
         "System updates are available to install",
         "Click here to view available updates",
         || {
-            tokio::spawn(async move { std::process::Command::new("cosmic-store") });
+            // TODO: open the updates page
+            tokio::spawn(async move {
+                _ = tokio::process::Command::new("cosmic-store").status().await;
+            });
         },
     );
 }
